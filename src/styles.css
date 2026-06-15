@@ -195,6 +195,7 @@ input {
   border-color: #21a67a;
   background: #e9fbf2;
   transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgb(33 166 122 / 0.14);
 }
 
 .practice-game.miss {
@@ -236,6 +237,42 @@ input {
   color: #182126;
   font-size: 22px;
   font-weight: 900;
+}
+
+.score-pill {
+  padding: 5px 9px;
+  color: #ffffff;
+  border-radius: 999px;
+  background: #225be3;
+  box-shadow: 0 4px 12px rgb(34 91 227 / 0.18);
+}
+
+.visual-cue {
+  position: absolute;
+  z-index: 2;
+  top: 70px;
+  right: 24px;
+  pointer-events: none;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+  animation: cue-pop 900ms ease-out both;
+}
+
+.visual-cue.score {
+  color: #225be3;
+  text-shadow: 0 4px 14px rgb(34 91 227 / 0.24);
+}
+
+.visual-cue.clear {
+  color: #21a67a;
+  font-size: 34px;
+  text-shadow: 0 4px 16px rgb(33 166 122 / 0.28);
+}
+
+.visual-cue.miss {
+  color: #d45151;
+  text-shadow: 0 4px 14px rgb(212 81 81 / 0.24);
 }
 
 .game-overlay,
@@ -305,6 +342,38 @@ input {
   color: #ffffff;
   border-color: #18776d;
   background: #18776d;
+}
+
+.time-meter {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7ecec;
+}
+
+.time-meter div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #21a67a 0%, #225be3 100%);
+  transition: width 220ms ease;
+}
+
+.time-meter.danger div {
+  background: linear-gradient(90deg, #d45151 0%, #f1a730 100%);
+  animation: time-danger 650ms ease-in-out infinite alternate;
+}
+
+.combo-badge {
+  justify-self: start;
+  padding: 5px 10px;
+  color: #ffffff;
+  border-radius: 999px;
+  background: #182126;
+  box-shadow: 0 6px 16px rgb(24 33 38 / 0.18);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  animation: combo-pop 180ms ease-out both;
 }
 
 .sentence {
@@ -515,6 +584,47 @@ input {
 
 .practice-empty {
   align-self: center;
+}
+
+@keyframes cue-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.88);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(1);
+  }
+}
+
+@keyframes combo-pop {
+  0% {
+    transform: scale(0.9);
+  }
+
+  70% {
+    transform: scale(1.06);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes time-danger {
+  from {
+    filter: brightness(1);
+  }
+
+  to {
+    filter: brightness(1.25);
+  }
 }
 
 .layer-tabs {

@@ -15,6 +15,11 @@ const promptSets = {
       { display: "こんにちは、Cornix。", kana: "こんにちは、cornix。" },
       { display: "日本語入力も練習できます。", kana: "にほんごにゅうりょくもれんしゅうできます。" },
       { display: "今日はキー配列を覚えます。", kana: "きょうはきーはいれつをおぼえます。" },
+      { display: "左右の親指をうまく使います。", kana: "さゆうのおやゆびをうまくつかいます。" },
+      { display: "記号の場所を少しずつ覚えます。", kana: "きごうのばしょをすこしずつおぼえます。" },
+      { display: "焦らず正確に入力します。", kana: "あせらずせいかくににゅうりょくします。" },
+      { display: "レイヤーキーを自然に押せるようにします。", kana: "れいやーきーをしぜんにおせるようにします。" },
+      { display: "短い文章からテンポを作ります。", kana: "みじかいぶんしょうからてんぽをつくります。" },
     ],
   },
   english: {
@@ -23,6 +28,11 @@ const promptSets = {
       { display: "Hello, Cornix!", input: "Hello, Cornix!" },
       { display: "Keep your rhythm.", input: "Keep your rhythm." },
       { display: "Type fast and stay relaxed.", input: "Type fast and stay relaxed." },
+      { display: "Small wins build speed.", input: "Small wins build speed." },
+      { display: "Layer keys need practice.", input: "Layer keys need practice." },
+      { display: "Accuracy comes first.", input: "Accuracy comes first." },
+      { display: "Find the key, then flow.", input: "Find the key, then flow." },
+      { display: "One more clean streak!", input: "One more clean streak!" },
     ],
   },
   code: {
@@ -31,6 +41,11 @@ const promptSets = {
       { display: "const x = 42;", input: "const x = 42;" },
       { display: "if (ok) return true;", input: "if (ok) return true;" },
       { display: "items.map(v => v + 1);", input: "items.map(v => v + 1);" },
+      { display: "user?.name ?? \"guest\"", input: "user?.name ?? \"guest\"" },
+      { display: "for (const item of items) {}", input: "for (const item of items) {}" },
+      { display: "return value.trim();", input: "return value.trim();" },
+      { display: "type Key = string | number;", input: "type Key = string | number;" },
+      { display: "console.log({ score });", input: "console.log({ score });" },
     ],
   },
   symbols: {
@@ -39,6 +54,11 @@ const promptSets = {
       { display: "- _ + = { } [ ]", input: "- _ + = { } [ ]" },
       { display: "!?;:,. / \\ |", input: "!?;:,. / \\ |" },
       { display: "A-Z 0-9", input: "A-Z 0-9" },
+      { display: "() => []", input: "() => []" },
+      { display: "< > \" ' ` ~", input: "< > \" ' ` ~" },
+      { display: "$ & * # @ % ^", input: "$ & * # @ % ^" },
+      { display: "== != <= >=", input: "== != <= >=" },
+      { display: "{ key: \"value\" }", input: "{ key: \"value\" }" },
     ],
   },
 } as const;
@@ -47,6 +67,7 @@ type PromptMode = keyof typeof promptSets;
 type Feedback = "idle" | "clear" | "miss";
 type Prompt = (typeof promptSets)[PromptMode]["prompts"][number];
 type GamePhase = "ready" | "countdown" | "playing" | "result";
+type VisualCue = { id: number; text: string; kind: "score" | "clear" | "miss" };
 
 const roundSeconds = 45;
 
@@ -165,6 +186,9 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
   const [completedCount, setCompletedCount] = useState(0);
   const [mistakeCount, setMistakeCount] = useState(0);
   const [comboCount, setComboCount] = useState(0);
+  const [maxComboCount, setMaxComboCount] = useState(0);
+  const [score, setScore] = useState(0);
+  const [visualCue, setVisualCue] = useState<VisualCue | null>(null);
   const [feedback, setFeedback] = useState<Feedback>("idle");
   const [phase, setPhase] = useState<GamePhase>("ready");
   const [countdown, setCountdown] = useState(3);
@@ -180,6 +204,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     [data, typingState.nextCharacters],
   );
   const progress = inputText.length === 0 ? 0 : Math.round((typedText.length / inputText.length) * 100);
+  const timeProgress = Math.max(0, Math.min(100, Math.round((remainingSeconds / roundSeconds) * 100)));
   const nextGuide = nextCharacter
     ? nextCandidates[0]
       ? `次: ${typingState.nextCharacters.join(" / ")} / 押す: ${nextCandidates[0].press}`
@@ -250,6 +275,15 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [phase, promptInputs, typedText]);
 
+  useEffect(() => {
+    if (!visualCue) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setVisualCue(null), 900);
+    return () => window.clearTimeout(timer);
+  }, [visualCue]);
+
   function activateCharacters(nextCharacters: string[]) {
     onQueryChange(nextCharacters);
 
@@ -257,6 +291,10 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     if (firstCandidate) {
       onPickCandidate(firstCandidate);
     }
+  }
+
+  function showCue(text: string, kind: VisualCue["kind"]) {
+    setVisualCue({ id: Date.now(), text, kind });
   }
 
   function playTone(kind: "tap" | "miss" | "clear") {
@@ -322,6 +360,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
       setMistakeCount((count) => count + 1);
       setComboCount(0);
       setFeedback("miss");
+      showCue("MISS", "miss");
       playTone("miss");
       window.setTimeout(() => setFeedback("idle"), 180);
       return;
@@ -330,13 +369,22 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setTypedText(nextTyped);
     setFeedback("idle");
     if (nextTyped.length > typedText.length) {
+      const points = 10 + Math.min(comboCount, 30);
+      setScore((current) => current + points);
+      showCue(`+${points}`, "score");
       playTone("tap");
     }
 
     if (nextState.complete) {
       setCompletedCount((count) => count + 1);
-      setComboCount((count) => count + 1);
+      setComboCount((count) => {
+        const nextCombo = count + 1;
+        setMaxComboCount((maxCombo) => Math.max(maxCombo, nextCombo));
+        return nextCombo;
+      });
+      setScore((current) => current + 150 + comboCount * 10);
       setFeedback("clear");
+      showCue("CLEAR!", "clear");
       playTone("clear");
       onQueryChange([]);
       window.setTimeout(() => {
@@ -353,6 +401,9 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setCompletedCount(0);
     setMistakeCount(0);
     setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
     setFeedback("idle");
     setPhase("ready");
     setRemainingSeconds(roundSeconds);
@@ -364,6 +415,9 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setCompletedCount(0);
     setMistakeCount(0);
     setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
     setFeedback("idle");
     setCountdown(3);
     setRemainingSeconds(roundSeconds);
@@ -376,6 +430,9 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setCompletedCount(0);
     setMistakeCount(0);
     setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
     setFeedback("idle");
     setPhase("ready");
     setRemainingSeconds(roundSeconds);
@@ -408,10 +465,16 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
           </div>
           <div className="game-hud">
             <div className="hud-main">{phase === "playing" ? `${remainingSeconds}s` : "45s"}</div>
+            <div className="score-pill">スコア {score}</div>
             <div>クリア {completedCount}</div>
             <div>ミス {mistakeCount}</div>
             <div>コンボ {comboCount}</div>
           </div>
+          {visualCue ? (
+            <div key={visualCue.id} className={`visual-cue ${visualCue.kind}`}>
+              {visualCue.text}
+            </div>
+          ) : null}
           {phase === "ready" ? (
             <div className="game-overlay">
               <button type="button" className="start-button" onClick={startGame}>
@@ -423,12 +486,17 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
           {phase === "result" ? (
             <div className="game-overlay result-panel">
               <div className="result-title">結果</div>
-              <div className="result-score">クリア {completedCount} / ミス {mistakeCount}</div>
+              <div className="result-score">スコア {score}</div>
+              <div className="result-score">クリア {completedCount} / ミス {mistakeCount} / 最大コンボ {maxComboCount}</div>
               <button type="button" className="start-button" onClick={startGame}>
                 もう一度
               </button>
             </div>
           ) : null}
+          <div className={remainingSeconds <= 10 && phase === "playing" ? "time-meter danger" : "time-meter"}>
+            <div style={{ width: `${timeProgress}%` }} />
+          </div>
+          {comboCount >= 3 && phase === "playing" ? <div className="combo-badge">{comboCount} COMBO</div> : null}
           <div className="sentence" aria-label="出題文">{prompt.display}</div>
           <div className="typing-track" aria-label="入力進捗">
             {inputCharacters.map((promptCharacter, index) => (
