@@ -192,9 +192,22 @@ type PromptMode = keyof typeof promptSets;
 type Feedback = "idle" | "clear" | "miss";
 type Prompt = (typeof promptSets)[PromptMode]["prompts"][number];
 type GamePhase = "ready" | "countdown" | "playing" | "result";
+type SessionMode = "timed" | "endless";
 type VisualCue = { id: number; text: string; kind: "score" | "clear" | "miss" };
 
 const roundSeconds = 45;
+
+function randomPromptIndex(length: number, avoidIndex = -1) {
+  if (length <= 1) {
+    return 0;
+  }
+
+  let nextIndex = Math.floor(Math.random() * length);
+  while (nextIndex === avoidIndex) {
+    nextIndex = Math.floor(Math.random() * length);
+  }
+  return nextIndex;
+}
 
 function playOscillator(
   context: AudioContext,
@@ -340,6 +353,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
   const [visualCue, setVisualCue] = useState<VisualCue | null>(null);
   const [feedback, setFeedback] = useState<Feedback>("idle");
   const [phase, setPhase] = useState<GamePhase>("ready");
+  const [sessionMode, setSessionMode] = useState<SessionMode>("timed");
   const [countdown, setCountdown] = useState(3);
   const [remainingSeconds, setRemainingSeconds] = useState(roundSeconds);
   const prompts = promptSets[mode].prompts;
@@ -354,6 +368,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
   );
   const progress = inputText.length === 0 ? 0 : Math.round((typedText.length / inputText.length) * 100);
   const timeProgress = Math.max(0, Math.min(100, Math.round((remainingSeconds / roundSeconds) * 100)));
+  const isTimedSession = sessionMode === "timed";
   const nextGuide = nextCharacter
     ? nextCandidates[0]
       ? `次: ${typingState.nextCharacters.join(" / ")} / 押す: ${nextCandidates[0].press}`
@@ -382,7 +397,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
   }, [countdown, phase, typingState.nextCharacters]);
 
   useEffect(() => {
-    if (phase !== "playing") {
+    if (phase !== "playing" || !isTimedSession) {
       return undefined;
     }
 
@@ -394,7 +409,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
 
     const timer = window.setTimeout(() => setRemainingSeconds((value) => value - 1), 1000);
     return () => window.clearTimeout(timer);
-  }, [onQueryChange, phase, remainingSeconds]);
+  }, [isTimedSession, onQueryChange, phase, remainingSeconds]);
 
   useEffect(() => {
     if (phase !== "playing") {
@@ -489,7 +504,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
 
   function advancePrompt(nextMode = mode) {
     const nextPrompts = promptSets[nextMode].prompts;
-    const nextIndex = nextMode === mode ? (promptIndex + 1) % nextPrompts.length : 0;
+    const nextIndex = randomPromptIndex(nextPrompts.length, nextMode === mode ? promptIndex : -1);
     const nextInputs = getPromptInputs(nextPrompts[nextIndex]);
     const nextState = getTypingState(nextInputs, "");
 
@@ -561,7 +576,28 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     advancePrompt(nextMode);
   }
 
+  function changeSessionMode(nextSessionMode: SessionMode) {
+    setSessionMode(nextSessionMode);
+    setTypedText("");
+    setCompletedCount(0);
+    setMistakeCount(0);
+    setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
+    setFeedback("idle");
+    setPhase("ready");
+    setCountdown(3);
+    setRemainingSeconds(roundSeconds);
+    onQueryChange([]);
+  }
+
   function startGame() {
+    const nextIndex = randomPromptIndex(prompts.length, promptIndex);
+    const nextInputs = getPromptInputs(prompts[nextIndex]);
+    const nextState = getTypingState(nextInputs, "");
+
+    setPromptIndex(nextIndex);
     setTypedText("");
     setCompletedCount(0);
     setMistakeCount(0);
@@ -574,6 +610,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setRemainingSeconds(roundSeconds);
     setPhase("countdown");
     onQueryChange([]);
+    activateCharacters(nextState.nextCharacters);
   }
 
   function resetGame() {
@@ -599,23 +636,43 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
         <div className="game-body">
           <div className="game-topline">
             <div className="game-label">タイピングゲーム</div>
-            <div className="mode-tabs" aria-label="練習モード">
-              {(Object.entries(promptSets) as Array<[PromptMode, (typeof promptSets)[PromptMode]]>).map(
-                ([modeKey, modeInfo]) => (
-                  <button
-                    key={modeKey}
-                    type="button"
-                    className={modeKey === mode ? "mode-tab active" : "mode-tab"}
-                    onClick={() => changeMode(modeKey)}
-                  >
-                    {modeInfo.label}
-                  </button>
-                ),
-              )}
+            <div className="game-controls">
+              <div className="mode-tabs" aria-label="練習モード">
+                {(Object.entries(promptSets) as Array<[PromptMode, (typeof promptSets)[PromptMode]]>).map(
+                  ([modeKey, modeInfo]) => (
+                    <button
+                      key={modeKey}
+                      type="button"
+                      className={modeKey === mode ? "mode-tab active" : "mode-tab"}
+                      onClick={() => changeMode(modeKey)}
+                    >
+                      {modeInfo.label}
+                    </button>
+                  ),
+                )}
+              </div>
+              <div className="mode-tabs session-tabs" aria-label="時間モード">
+                <button
+                  type="button"
+                  className={sessionMode === "timed" ? "mode-tab active" : "mode-tab"}
+                  onClick={() => changeSessionMode("timed")}
+                >
+                  45秒
+                </button>
+                <button
+                  type="button"
+                  className={sessionMode === "endless" ? "mode-tab active" : "mode-tab"}
+                  onClick={() => changeSessionMode("endless")}
+                >
+                  無限
+                </button>
+              </div>
             </div>
           </div>
           <div className="game-hud">
-            <div className="hud-main">{phase === "playing" ? `${remainingSeconds}s` : "45s"}</div>
+            <div className="hud-main">
+              {isTimedSession ? (phase === "playing" ? `${remainingSeconds}s` : `${roundSeconds}s`) : "∞"}
+            </div>
             <div className="score-pill">スコア {score}</div>
             <div>クリア {completedCount}</div>
             <div>ミス {mistakeCount}</div>
@@ -648,8 +705,16 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
               </button>
             </div>
           ) : null}
-          <div className={remainingSeconds <= 10 && phase === "playing" ? "time-meter danger" : "time-meter"}>
-            <div style={{ width: `${timeProgress}%` }} />
+          <div
+            className={
+              !isTimedSession
+                ? "time-meter endless"
+                : remainingSeconds <= 10 && phase === "playing"
+                  ? "time-meter danger"
+                  : "time-meter"
+            }
+          >
+            <div style={{ width: `${isTimedSession ? timeProgress : 100}%` }} />
           </div>
           <div className={comboCount >= 3 && phase === "playing" ? "combo-badge" : "combo-badge empty"}>
             {Math.max(comboCount, 3)} COMBO

@@ -218,10 +218,20 @@ input {
 }
 
 .game-topline {
+  position: relative;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.game-controls {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
 }
 
 .game-hud {
@@ -367,6 +377,11 @@ input {
   gap: 5px;
 }
 
+.session-tabs {
+  padding-left: 8px;
+  border-left: 1px solid #d7dddd;
+}
+
 .mode-tab {
   min-height: 28px;
   padding: 5px 8px;
@@ -402,6 +417,12 @@ input {
 .time-meter.danger div {
   background: linear-gradient(90deg, #d45151 0%, #f1a730 100%);
   animation: time-danger 650ms ease-in-out infinite alternate;
+}
+
+.time-meter.endless div {
+  background: linear-gradient(90deg, #18776d 0%, #21a67a 46%, #225be3 100%);
+  background-size: 180% 100%;
+  animation: endless-flow 1.8s linear infinite;
 }
 
 .combo-badge {
@@ -721,6 +742,16 @@ input {
 
   to {
     filter: brightness(1.25);
+  }
+}
+
+@keyframes endless-flow {
+  from {
+    background-position: 0 0;
+  }
+
+  to {
+    background-position: 180% 0;
   }
 }
 
