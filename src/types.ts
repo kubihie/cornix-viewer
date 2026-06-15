@@ -2,9 +2,13 @@ export type KeyGeometry = {
   id: string;
   hand: "left" | "right";
   kind?: "key" | "encoder";
+  row?: number;
+  col?: number;
   x: number;
   y: number;
   r?: number;
+  rx?: number;
+  ry?: number;
   w?: number;
   h?: number;
 };

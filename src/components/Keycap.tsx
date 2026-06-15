@@ -8,6 +8,8 @@ type KeycapProps = {
   width: number;
   height: number;
   rotation?: number;
+  originX?: number;
+  originY?: number;
   selected: boolean;
   baseRaw?: string;
   showBaseForTransparent: boolean;
@@ -44,6 +46,8 @@ export function Keycap({
   width,
   height,
   rotation = 0,
+  originX,
+  originY,
   selected,
   baseRaw,
   showBaseForTransparent,
@@ -67,11 +71,16 @@ export function Keycap({
   ]
     .filter(Boolean)
     .join(" ");
+  const usesLayoutOrigin = originX !== undefined && originY !== undefined;
 
   return (
     <g
       className={className}
-      transform={`translate(${x} ${y}) rotate(${rotation} ${width / 2} ${height / 2})`}
+      transform={
+        usesLayoutOrigin
+          ? `rotate(${rotation} ${originX} ${originY})`
+          : `translate(${x} ${y}) rotate(${rotation} ${width / 2} ${height / 2})`
+      }
       role="button"
       tabIndex={0}
       aria-label={`${id}: ${presentation.label || presentation.raw}`}
@@ -83,20 +92,26 @@ export function Keycap({
         }
       }}
     >
-      <rect width={width} height={height} rx="7" ry="7" />
-      {inheritsBase ? <text className="transparent-mark" x={width - 8} y={13}>▽</text> : null}
-      <text
-        className="key-label"
-        x={width / 2}
-        y={height / 2 - ((lines.length - 1) * fontSize) / 2}
-        fontSize={fontSize}
-      >
-        {lines.map((line, index) => (
-          <tspan key={`${line}-${index}`} x={width / 2} dy={index === 0 ? 0 : fontSize + 2}>
-            {line}
-          </tspan>
-        ))}
-      </text>
+      <g transform={usesLayoutOrigin ? `translate(${x} ${y})` : undefined}>
+        <rect width={width} height={height} rx="7" ry="7" />
+        {inheritsBase ? (
+          <text className="transparent-mark" x={width - 8} y={13}>
+            ▽
+          </text>
+        ) : null}
+        <text
+          className="key-label"
+          x={width / 2}
+          y={height / 2 - ((lines.length - 1) * fontSize) / 2}
+          fontSize={fontSize}
+        >
+          {lines.map((line, index) => (
+            <tspan key={`${line}-${index}`} x={width / 2} dy={index === 0 ? 0 : fontSize + 2}>
+              {line}
+            </tspan>
+          ))}
+        </text>
+      </g>
     </g>
   );
 }

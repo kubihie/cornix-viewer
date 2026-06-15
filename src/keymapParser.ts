@@ -1,64 +1,7 @@
 import type { KeyGeometry, KeymapData, Layer } from "./types";
 
-const cornixImportKeyIds = [
-  "L00",
-  "L01",
-  "L02",
-  "L03",
-  "L04",
-  "L05",
-  "R00",
-  "R01",
-  "R02",
-  "R03",
-  "R04",
-  "R05",
-  "L10",
-  "L11",
-  "L12",
-  "L13",
-  "L14",
-  "L15",
-  "R10",
-  "R11",
-  "R12",
-  "R13",
-  "R14",
-  "R15",
-  "L20",
-  "L21",
-  "L22",
-  "L23",
-  "L24",
-  "L25",
-  "R20",
-  "R21",
-  "R22",
-  "R23",
-  "R24",
-  "R25",
-  "L33",
-  "L34",
-  "L35",
-  "L30",
-  "L31",
-  "L32",
-  "R30",
-  "R31",
-  "R32",
-  "R33",
-  "R34",
-  "R35",
-];
-
 export function getCornixImportKeyIds(data: KeymapData) {
-  const available = new Set(data.layout.keys.map((key) => key.id));
-  const ordered = cornixImportKeyIds.filter((keyId) => available.has(keyId));
-  const remaining = data.layout.keys
-    .filter((key) => key.kind !== "encoder" && !ordered.includes(key.id))
-    .map((key) => key.id);
-
-  return [...ordered, ...remaining];
+  return data.layout.keys.filter((key) => key.kind !== "encoder").map((key) => key.id);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -74,9 +17,13 @@ function validateKeyGeometry(value: unknown): value is KeyGeometry {
     typeof value.id === "string" &&
     (value.hand === "left" || value.hand === "right") &&
     (value.kind === undefined || value.kind === "key" || value.kind === "encoder") &&
+    (value.row === undefined || typeof value.row === "number") &&
+    (value.col === undefined || typeof value.col === "number") &&
     typeof value.x === "number" &&
     typeof value.y === "number" &&
     (value.r === undefined || typeof value.r === "number") &&
+    (value.rx === undefined || typeof value.rx === "number") &&
+    (value.ry === undefined || typeof value.ry === "number") &&
     (value.w === undefined || typeof value.w === "number") &&
     (value.h === undefined || typeof value.h === "number")
   );
@@ -167,29 +114,6 @@ function findLayerArrays(value: unknown): unknown[] | undefined {
   return undefined;
 }
 
-function findEncoderArrays(value: unknown): unknown[] | undefined {
-  if (!isObject(value)) {
-    return undefined;
-  }
-
-  const directCandidates = [value.encoder_map, value.encoderMap, value.encoders];
-
-  for (const candidate of directCandidates) {
-    if (Array.isArray(candidate) && candidate.some((entry) => flattenKeycodes(entry).length > 0)) {
-      return candidate;
-    }
-  }
-
-  for (const child of Object.values(value)) {
-    const found = findEncoderArrays(child);
-    if (found) {
-      return found;
-    }
-  }
-
-  return undefined;
-}
-
 function getLayerName(source: unknown, index: number) {
   if (isObject(source) && typeof source.name === "string") {
     return source.name;
@@ -199,14 +123,89 @@ function getLayerName(source: unknown, index: number) {
   return defaults[index] ?? `Layer ${index}`;
 }
 
+function isLayerMatrix(value: unknown): value is unknown[][] {
+  return Array.isArray(value) && value.every((row) => Array.isArray(row));
+}
+
+function isLayerMatrixList(value: unknown): value is unknown[][][] {
+  return Array.isArray(value) && value.every(isLayerMatrix);
+}
+
+function findMatrixLayerSources(value: unknown): unknown[][][] | undefined {
+  if (!isObject(value)) {
+    return undefined;
+  }
+
+  if (isLayerMatrixList(value.layout)) {
+    return value.layout;
+  }
+
+  if (isLayerMatrixList(value.layers)) {
+    return value.layers;
+  }
+
+  return undefined;
+}
+
+function normalizeSavedKeycode(value: unknown): string {
+  if (value === undefined || value === null || value === -1) {
+    return "KC_NO";
+  }
+
+  if (typeof value === "string") {
+    return value.trim() || "KC_NO";
+  }
+
+  if (typeof value === "number") {
+    return value < 0 ? "KC_NO" : `0x${value.toString(16)}`;
+  }
+
+  return "KC_NO";
+}
+
+function readMatrixKeycode(layer: unknown[][], row: number, col: number) {
+  return normalizeSavedKeycode(layer[row]?.[col]);
+}
+
+function normalizeMatrixKeymap(value: unknown, fallback: KeymapData): KeymapData | undefined {
+  const layerSources = findMatrixLayerSources(value);
+  if (!layerSources) {
+    return undefined;
+  }
+
+  const matrixKeys = fallback.layout.keys.filter(
+    (key): key is KeyGeometry & { row: number; col: number } =>
+      typeof key.row === "number" && typeof key.col === "number",
+  );
+
+  if (matrixKeys.length === 0) {
+    throw new Error("The bundled layout is missing matrix row/col metadata.");
+  }
+
+  const layers: Layer[] = layerSources.map((layerSource, layerIndex) => ({
+    name: getLayerName(layerSource, layerIndex),
+    keys: Object.fromEntries(matrixKeys.map((key) => [key.id, readMatrixKeycode(layerSource, key.row, key.col)])),
+  }));
+
+  return {
+    keyboard: fallback.keyboard,
+    layout: fallback.layout,
+    layers,
+  };
+}
+
 function normalizeVialLikeJson(value: unknown, fallback: KeymapData): KeymapData {
+  const matrixKeymap = normalizeMatrixKeymap(value, fallback);
+  if (matrixKeymap) {
+    return matrixKeymap;
+  }
+
   const layerSources = findLayerArrays(value);
   if (!layerSources) {
     throw new Error("Vial-like keymap layers were not found.");
   }
 
   const keyIds = getCornixImportKeyIds(fallback);
-  const encoderSources = findEncoderArrays(value);
   const layers: Layer[] = layerSources
     .map((layerSource, layerIndex) => {
       const keycodes = flattenKeycodes(layerSource);
@@ -215,13 +214,6 @@ function normalizeVialLikeJson(value: unknown, fallback: KeymapData): KeymapData
       }
 
       const keys = Object.fromEntries(keyIds.map((keyId, index) => [keyId, keycodes[index] ?? "KC_NO"]));
-      const encoderKeycodes = flattenKeycodes(encoderSources?.[layerIndex]);
-      if (encoderKeycodes[0]) {
-        keys.LENC = encoderKeycodes[0];
-      }
-      if (encoderKeycodes[1]) {
-        keys.RENC = encoderKeycodes[1];
-      }
 
       return {
         name: getLayerName(layerSource, layerIndex),

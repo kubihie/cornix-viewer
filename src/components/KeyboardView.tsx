@@ -21,6 +21,8 @@ type PixelGeometry = {
   y: number;
   width: number;
   height: number;
+  originX?: number;
+  originY?: number;
 };
 
 function getUnits(data: KeymapData): Units {
@@ -40,34 +42,50 @@ function getPixelGeometry(key: KeyGeometry, units: Units): PixelGeometry {
     y: key.y * (units.keyHeight + units.gap),
     width: widthUnits * units.keyWidth + (widthUnits - 1) * units.gap,
     height: heightUnits * units.keyHeight + (heightUnits - 1) * units.gap,
+    originX: key.rx === undefined ? undefined : key.rx * (units.keyWidth + units.gap),
+    originY: key.ry === undefined ? undefined : key.ry * (units.keyHeight + units.gap),
   };
+}
+
+function rotatePoint(x: number, y: number, angle: number, originX: number, originY: number) {
+  const radians = (angle * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const dx = x - originX;
+  const dy = y - originY;
+
+  return {
+    x: originX + dx * cos - dy * sin,
+    y: originY + dx * sin + dy * cos,
+  };
+}
+
+function getGeometryCorners(key: KeyGeometry, units: Units) {
+  const geometry = getPixelGeometry(key, units);
+  const corners = [
+    { x: geometry.x, y: geometry.y },
+    { x: geometry.x + geometry.width, y: geometry.y },
+    { x: geometry.x + geometry.width, y: geometry.y + geometry.height },
+    { x: geometry.x, y: geometry.y + geometry.height },
+  ];
+
+  if (!key.r) {
+    return corners;
+  }
+
+  const originX = geometry.originX ?? geometry.x + geometry.width / 2;
+  const originY = geometry.originY ?? geometry.y + geometry.height / 2;
+  return corners.map((corner) => rotatePoint(corner.x, corner.y, key.r ?? 0, originX, originY));
 }
 
 function getBounds(keys: KeyGeometry[], units: Units) {
-  const geometries = keys.map((key) => getPixelGeometry(key, units));
-  const minX = Math.min(...geometries.map((key) => key.x), 0);
-  const minY = Math.min(...geometries.map((key) => key.y), 0);
-  const maxX = Math.max(...geometries.map((key) => key.x + key.width), units.keyWidth);
-  const maxY = Math.max(...geometries.map((key) => key.y + key.height), units.keyHeight);
+  const corners = keys.flatMap((key) => getGeometryCorners(key, units));
+  const minX = Math.min(...corners.map((point) => point.x), 0);
+  const minY = Math.min(...corners.map((point) => point.y), 0);
+  const maxX = Math.max(...corners.map((point) => point.x), units.keyWidth);
+  const maxY = Math.max(...corners.map((point) => point.y), units.keyHeight);
 
   return { minX, minY, width: maxX - minX, height: maxY - minY };
-}
-
-function getHandOffset(
-  hand: KeyGeometry["hand"],
-  leftBounds: ReturnType<typeof getBounds>,
-  rightBounds: ReturnType<typeof getBounds>,
-  units: Units,
-) {
-  if (hand === "left") {
-    return { x: -leftBounds.minX, y: -Math.min(leftBounds.minY, rightBounds.minY) };
-  }
-
-  const centerGap = units.keyWidth * 1.18;
-  return {
-    x: leftBounds.width + centerGap - rightBounds.minX,
-    y: -Math.min(leftBounds.minY, rightBounds.minY),
-  };
 }
 
 function KeyboardItem({
@@ -134,37 +152,27 @@ function CombinedKeyboardSvg({
   onSelectKey: (id: string) => void;
 }) {
   const units = getUnits(data);
-  const leftKeys = keys.filter((key) => key.hand === "left");
-  const rightKeys = keys.filter((key) => key.hand === "right");
-  const leftBounds = getBounds(leftKeys, units);
-  const rightBounds = getBounds(rightKeys, units);
-  const minY = Math.min(leftBounds.minY, rightBounds.minY);
-  const height = Math.max(leftBounds.minY + leftBounds.height, rightBounds.minY + rightBounds.height) - minY;
-  const centerGap = units.keyWidth * 1.18;
-  const width = leftBounds.width + centerGap + rightBounds.width;
+  const bounds = getBounds(keys, units);
+  const padding = units.gap * 1.6;
 
   return (
     <section className="keyboard-section" aria-label="Cornix LP keyboard">
       <svg
         className="keyboard-svg"
-        viewBox={`0 0 ${width} ${height}`}
+        viewBox={`${bounds.minX - padding} ${bounds.minY - padding} ${bounds.width + padding * 2} ${
+          bounds.height + padding * 2
+        }`}
         role="group"
         aria-label="Keyboard keys"
       >
         {keys.map((key) => {
-          const offset = getHandOffset(key.hand, leftBounds, rightBounds, units);
           const geometry = getPixelGeometry(key, units);
-          const translatedGeometry = {
-            ...geometry,
-            x: geometry.x + offset.x,
-            y: geometry.y + offset.y,
-          };
 
           return (
             <KeyboardItem
               key={key.id}
               keyGeometry={key}
-              pixelGeometry={translatedGeometry}
+              pixelGeometry={geometry}
               data={data}
               layerIndex={layerIndex}
               selectedKeyId={selectedKeyId}
