@@ -633,7 +633,11 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
               </button>
             </div>
           ) : null}
-          {phase === "countdown" ? <div className="countdown-display">{countdown || "GO"}</div> : null}
+          {phase === "countdown" ? (
+            <div key={countdown} className={countdown ? "countdown-display" : "countdown-display go"}>
+              <span>{countdown || "GO"}</span>
+            </div>
+          ) : null}
           {phase === "result" ? (
             <div className="game-overlay result-panel">
               <div className="result-title">結果</div>
@@ -647,7 +651,9 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
           <div className={remainingSeconds <= 10 && phase === "playing" ? "time-meter danger" : "time-meter"}>
             <div style={{ width: `${timeProgress}%` }} />
           </div>
-          {comboCount >= 3 && phase === "playing" ? <div className="combo-badge">{comboCount} COMBO</div> : null}
+          <div className={comboCount >= 3 && phase === "playing" ? "combo-badge" : "combo-badge empty"}>
+            {Math.max(comboCount, 3)} COMBO
+          </div>
           <div className="sentence" aria-label="出題文">{prompt.display}</div>
           <div className="typing-track" aria-label="入力進捗">
             {inputCharacters.map((promptCharacter, index) => (
@@ -661,7 +667,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
               </span>
             ))}
           </div>
-          {phase === "playing" ? <div className="game-status">{nextGuide}</div> : null}
+          <div className={phase === "playing" ? "game-status" : "game-status idle"}>{phase === "playing" ? nextGuide : "\u00a0"}</div>
           <div className="combo-meter">
             <div style={{ width: `${progress}%` }} />
           </div>
