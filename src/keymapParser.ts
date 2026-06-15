@@ -98,10 +98,6 @@ function applyCornixLowerNavCompatibilityToLayer(layer: Layer): Layer {
       R1C11: keys.R3C8,
       R1C10: keys.R2C8,
       R1C9: keys.R3C7,
-      R3C9: "KC_NO",
-      R3C8: "KC_NO",
-      R2C8: "KC_NO",
-      R3C7: "KC_NO",
     },
   };
 }
