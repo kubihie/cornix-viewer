@@ -4,6 +4,8 @@ export type KeyGeometry = {
   kind?: "key" | "encoder";
   row?: number;
   col?: number;
+  vialRow?: number;
+  vialCol?: number;
   x: number;
   y: number;
   r?: number;

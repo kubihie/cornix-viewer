@@ -161,8 +161,8 @@ export function getKeycodePresentation(rawKeycode?: string): KeycodePresentation
   if (mo) {
     return {
       raw,
-      label: `Fn${mo[1]}`,
-      description: `Hold: Layer ${mo[1]}`,
+      label: `MO(${mo[1]})`,
+      description: `Momentary Layer ${mo[1]}`,
       kind: "layer",
     };
   }

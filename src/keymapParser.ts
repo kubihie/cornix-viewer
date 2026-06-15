@@ -19,6 +19,8 @@ function validateKeyGeometry(value: unknown): value is KeyGeometry {
     (value.kind === undefined || value.kind === "key" || value.kind === "encoder") &&
     (value.row === undefined || typeof value.row === "number") &&
     (value.col === undefined || typeof value.col === "number") &&
+    (value.vialRow === undefined || typeof value.vialRow === "number") &&
+    (value.vialCol === undefined || typeof value.vialCol === "number") &&
     typeof value.x === "number" &&
     typeof value.y === "number" &&
     (value.r === undefined || typeof value.r === "number") &&
@@ -163,8 +165,23 @@ function normalizeSavedKeycode(value: unknown): string {
   return "KC_NO";
 }
 
-function readMatrixKeycode(layer: unknown[][], row: number, col: number) {
-  return normalizeSavedKeycode(layer[row]?.[col]);
+function hasMatrixCoordinate(layer: unknown[][], row: number, col: number) {
+  return Array.isArray(layer[row]) && col in layer[row];
+}
+
+function readMatrixKeycode(layer: unknown[][], key: KeyGeometry) {
+  const coordinates = [
+    [key.vialRow, key.vialCol],
+    [key.row, key.col],
+  ];
+
+  for (const [row, col] of coordinates) {
+    if (typeof row === "number" && typeof col === "number" && hasMatrixCoordinate(layer, row, col)) {
+      return normalizeSavedKeycode(layer[row]?.[col]);
+    }
+  }
+
+  return "KC_NO";
 }
 
 function normalizeMatrixKeymap(value: unknown, fallback: KeymapData): KeymapData | undefined {
@@ -174,8 +191,9 @@ function normalizeMatrixKeymap(value: unknown, fallback: KeymapData): KeymapData
   }
 
   const matrixKeys = fallback.layout.keys.filter(
-    (key): key is KeyGeometry & { row: number; col: number } =>
-      typeof key.row === "number" && typeof key.col === "number",
+    (key) =>
+      (typeof key.row === "number" && typeof key.col === "number") ||
+      (typeof key.vialRow === "number" && typeof key.vialCol === "number"),
   );
 
   if (matrixKeys.length === 0) {
@@ -184,7 +202,7 @@ function normalizeMatrixKeymap(value: unknown, fallback: KeymapData): KeymapData
 
   const layers: Layer[] = layerSources.map((layerSource, layerIndex) => ({
     name: getLayerName(layerSource, layerIndex),
-    keys: Object.fromEntries(matrixKeys.map((key) => [key.id, readMatrixKeycode(layerSource, key.row, key.col)])),
+    keys: Object.fromEntries(matrixKeys.map((key) => [key.id, readMatrixKeycode(layerSource, key)])),
   }));
 
   return {
