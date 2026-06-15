@@ -6,6 +6,7 @@ type KeyboardViewProps = {
   data: KeymapData;
   layerIndex: number;
   highlightedKeyIds?: ReadonlySet<string>;
+  rawOverrides?: ReadonlyMap<string, string>;
   showBaseForTransparent: boolean;
 };
 
@@ -93,6 +94,7 @@ function KeyboardItem({
   data,
   layerIndex,
   highlightedKeyIds,
+  rawOverrides,
   showBaseForTransparent,
 }: {
   keyGeometry: KeyGeometry;
@@ -100,11 +102,12 @@ function KeyboardItem({
   data: KeymapData;
   layerIndex: number;
   highlightedKeyIds?: ReadonlySet<string>;
+  rawOverrides?: ReadonlyMap<string, string>;
   showBaseForTransparent: boolean;
 }) {
   const layer = data.layers[layerIndex];
   const baseLayer = data.layers[0];
-  const raw = layer.keys[keyGeometry.id] ?? "KC_NO";
+  const raw = rawOverrides?.get(keyGeometry.id) ?? layer.keys[keyGeometry.id] ?? "KC_NO";
 
   if (keyGeometry.kind === "encoder") {
     return (
@@ -135,12 +138,14 @@ function CombinedKeyboardSvg({
   data,
   layerIndex,
   highlightedKeyIds,
+  rawOverrides,
   showBaseForTransparent,
 }: {
   keys: KeyGeometry[];
   data: KeymapData;
   layerIndex: number;
   highlightedKeyIds?: ReadonlySet<string>;
+  rawOverrides?: ReadonlyMap<string, string>;
   showBaseForTransparent: boolean;
 }) {
   const units = getUnits(data);
@@ -168,6 +173,7 @@ function CombinedKeyboardSvg({
               data={data}
               layerIndex={layerIndex}
               highlightedKeyIds={highlightedKeyIds}
+              rawOverrides={rawOverrides}
               showBaseForTransparent={showBaseForTransparent}
             />
           );
@@ -181,6 +187,7 @@ export function KeyboardView({
   data,
   layerIndex,
   highlightedKeyIds,
+  rawOverrides,
   showBaseForTransparent,
 }: KeyboardViewProps) {
   return (
@@ -191,6 +198,7 @@ export function KeyboardView({
           data={data}
           layerIndex={layerIndex}
           highlightedKeyIds={highlightedKeyIds}
+          rawOverrides={rawOverrides}
           showBaseForTransparent={showBaseForTransparent}
         />
       </div>

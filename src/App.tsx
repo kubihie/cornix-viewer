@@ -24,6 +24,26 @@ function getInitialLayerIndex(maxLayer: number) {
   return Math.min(Math.max(parsed, 0), Math.max(maxLayer - 1, 0));
 }
 
+function getHoldLayerIndex(rawKeycode: string) {
+  const raw = rawKeycode.trim();
+  const mo = raw.match(/^MO\((\d+)\)$/);
+  if (mo) {
+    return Number(mo[1]);
+  }
+
+  const lt = raw.match(/^LT\((\d+),\s*.+\)$/);
+  if (lt) {
+    return Number(lt[1]);
+  }
+
+  const lm = raw.match(/^LM\((\d+),\s*.+\)$/);
+  if (lm) {
+    return Number(lm[1]);
+  }
+
+  return undefined;
+}
+
 export default function App() {
   const [data, setData] = useState<KeymapData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +55,23 @@ export default function App() {
   const [practiceCharacters, setPracticeCharacters] = useState<string[]>([]);
   const [practiceDisplayLayerIndex, setPracticeDisplayLayerIndex] = useState<number | undefined>();
   const displayLayerIndex = practiceDisplayLayerIndex ?? activeLayerIndex;
+
+  const layerAccessKeyOverrides = useMemo(() => {
+    if (!data || practiceDisplayLayerIndex === undefined || practiceDisplayLayerIndex === 0) {
+      return undefined;
+    }
+
+    const baseLayer = data.layers[0];
+    const overrides = new Map<string, string>();
+    for (const key of data.layout.keys) {
+      const raw = baseLayer.keys[key.id] ?? "KC_NO";
+      if (getHoldLayerIndex(raw) === practiceDisplayLayerIndex) {
+        overrides.set(key.id, raw);
+      }
+    }
+
+    return overrides.size > 0 ? overrides : undefined;
+  }, [data, practiceDisplayLayerIndex]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,8 +121,12 @@ export default function App() {
       .filter((candidate) => candidate.layerIndex === displayLayerIndex)
       .map((candidate) => candidate.keyId);
 
+    if (layerAccessKeyOverrides) {
+      keyIds.push(...layerAccessKeyOverrides.keys());
+    }
+
     return new Set(keyIds);
-  }, [data, displayLayerIndex, practiceCharacters]);
+  }, [data, displayLayerIndex, layerAccessKeyOverrides, practiceCharacters]);
 
   function updatePracticeCharacters(characters: string[]) {
     setPracticeCharacters(characters);
@@ -215,6 +256,7 @@ export default function App() {
         data={data}
         layerIndex={displayLayerIndex}
         highlightedKeyIds={highlightedKeyIds}
+        rawOverrides={layerAccessKeyOverrides}
         showBaseForTransparent={showBaseForTransparent}
       />
     </main>
