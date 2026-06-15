@@ -33,6 +33,8 @@ export default function App() {
   const [shareStatus, setShareStatus] = useState<string | undefined>();
   const [shareUrl, setShareUrl] = useState<string | undefined>();
   const [practiceCharacters, setPracticeCharacters] = useState<string[]>([]);
+  const [practiceDisplayLayerIndex, setPracticeDisplayLayerIndex] = useState<number | undefined>();
+  const displayLayerIndex = practiceDisplayLayerIndex ?? activeLayerIndex;
 
   useEffect(() => {
     let cancelled = false;
@@ -79,11 +81,23 @@ export default function App() {
 
     const keyIds = practiceCharacters
       .flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))
-      .filter((candidate) => candidate.layerIndex === activeLayerIndex)
+      .filter((candidate) => candidate.layerIndex === displayLayerIndex)
       .map((candidate) => candidate.keyId);
 
     return new Set(keyIds);
-  }, [activeLayerIndex, data, practiceCharacters]);
+  }, [data, displayLayerIndex, practiceCharacters]);
+
+  function updatePracticeCharacters(characters: string[]) {
+    setPracticeCharacters(characters);
+
+    if (!data || characters.length === 0) {
+      setPracticeDisplayLayerIndex(undefined);
+      return;
+    }
+
+    const firstCandidate = characters.flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))[0];
+    setPracticeDisplayLayerIndex(firstCandidate?.layerIndex);
+  }
 
   function applyDroppedFile(text: string, fileName: string) {
     if (!data) {
@@ -95,6 +109,7 @@ export default function App() {
       setData(dropped);
       setError(null);
       setActiveLayerIndex(0);
+      setPracticeDisplayLayerIndex(undefined);
       setFileStatus(`${fileName} を読み込みました (${dropped.layers.length} レイヤー)`);
       setShareStatus(undefined);
       setShareUrl(undefined);
@@ -124,7 +139,7 @@ export default function App() {
 
   function pickPracticeCandidate(candidate: PracticeCandidate) {
     setPracticeCharacters([candidate.character]);
-    setActiveLayerIndex(candidate.layerIndex);
+    setPracticeDisplayLayerIndex(candidate.layerIndex);
   }
 
   if (error) {
@@ -183,15 +198,22 @@ export default function App() {
         </div>
       ) : null}
 
-      <LayerTabs layers={data.layers} activeIndex={activeLayerIndex} onChange={setActiveLayerIndex} />
+      <LayerTabs
+        layers={data.layers}
+        activeIndex={displayLayerIndex}
+        onChange={(nextLayerIndex) => {
+          setActiveLayerIndex(nextLayerIndex);
+          setPracticeDisplayLayerIndex(undefined);
+        }}
+      />
 
       <FileDropZone onFileText={applyDroppedFile} status={fileStatus} />
 
-      <TypingPractice data={data} onQueryChange={setPracticeCharacters} onPickCandidate={pickPracticeCandidate} />
+      <TypingPractice data={data} onQueryChange={updatePracticeCharacters} onPickCandidate={pickPracticeCandidate} />
 
       <KeyboardView
         data={data}
-        layerIndex={activeLayerIndex}
+        layerIndex={displayLayerIndex}
         highlightedKeyIds={highlightedKeyIds}
         showBaseForTransparent={showBaseForTransparent}
       />

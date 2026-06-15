@@ -376,10 +376,10 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     : "クリア！";
 
   useEffect(() => {
-    if (typedText.length === 0 && nextCharacter) {
+    if (phase === "playing" && typedText.length === 0 && nextCharacter) {
       activateCharacters(typingState.nextCharacters);
     }
-  }, [mode, promptIndex]);
+  }, [mode, phase, promptIndex]);
 
   useEffect(() => {
     if (phase !== "countdown") {
@@ -502,7 +502,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     playOscillator(context, master, 1520 + comboLift, "sine", now + 0.006, 0.05, 0.045, 1860 + comboLift);
   }
 
-  function advancePrompt(nextMode = mode) {
+  function advancePrompt(nextMode = mode, activate = phase === "playing") {
     const nextPrompts = promptSets[nextMode].prompts;
     const nextIndex = randomPromptIndex(nextPrompts.length, nextMode === mode ? promptIndex : -1);
     const nextInputs = getPromptInputs(nextPrompts[nextIndex]);
@@ -510,7 +510,11 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
 
     setPromptIndex(nextIndex);
     setTypedText("");
-    activateCharacters(nextState.nextCharacters);
+    if (activate) {
+      activateCharacters(nextState.nextCharacters);
+    } else {
+      onQueryChange([]);
+    }
   }
 
   function updateTypedText(value: string) {
@@ -573,7 +577,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setFeedback("idle");
     setPhase("ready");
     setRemainingSeconds(roundSeconds);
-    advancePrompt(nextMode);
+    advancePrompt(nextMode, false);
   }
 
   function changeSessionMode(nextSessionMode: SessionMode) {
@@ -624,7 +628,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setFeedback("idle");
     setPhase("ready");
     setRemainingSeconds(roundSeconds);
-    activateCharacters(getTypingState(promptInputs, "").nextCharacters);
+    onQueryChange([]);
   }
 
   const inputCharacters = Array.from(inputText);
