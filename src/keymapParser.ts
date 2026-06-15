@@ -64,6 +64,59 @@ export function validateKeymap(value: unknown): KeymapData {
   return value as KeymapData;
 }
 
+function isNoKey(keycode?: string) {
+  return keycode === undefined || keycode === "KC_NO" || keycode === "XXXXXXX" || keycode === "";
+}
+
+function isKey(keycode: string | undefined, expected: string) {
+  if (expected === "KC_RIGHT") {
+    return keycode === "KC_RIGHT" || keycode === "KC_RGHT";
+  }
+
+  return keycode === expected;
+}
+
+function applyCornixLowerNavCompatibilityToLayer(layer: Layer): Layer {
+  const keys = layer.keys;
+  const homeTargets = ["R1C12", "R1C11", "R1C10", "R1C9"];
+  const hasEmptyHomeNav = homeTargets.every((keyId) => isNoKey(keys[keyId]));
+  const hasBottomNav =
+    isKey(keys.R3C9, "KC_LEFT") &&
+    isKey(keys.R3C8, "KC_DOWN") &&
+    isKey(keys.R2C8, "KC_UP") &&
+    isKey(keys.R3C7, "KC_RIGHT");
+
+  if (!hasEmptyHomeNav || !hasBottomNav) {
+    return layer;
+  }
+
+  return {
+    ...layer,
+    keys: {
+      ...keys,
+      R1C12: keys.R3C9,
+      R1C11: keys.R3C8,
+      R1C10: keys.R2C8,
+      R1C9: keys.R3C7,
+      R3C9: "KC_NO",
+      R3C8: "KC_NO",
+      R2C8: "KC_NO",
+      R3C7: "KC_NO",
+    },
+  };
+}
+
+export function applyCornixCompatibility(data: KeymapData): KeymapData {
+  if (data.keyboard !== "Cornix LP") {
+    return data;
+  }
+
+  return {
+    ...data,
+    layers: data.layers.map(applyCornixLowerNavCompatibilityToLayer),
+  };
+}
+
 function looksLikeKeycode(value: unknown): value is string {
   return (
     typeof value === "string" &&
@@ -261,8 +314,8 @@ export function parseDroppedKeymap(text: string, fallback: KeymapData): KeymapDa
   }
 
   try {
-    return validateKeymap(parsed);
+    return applyCornixCompatibility(validateKeymap(parsed));
   } catch {
-    return normalizeVialLikeJson(parsed, fallback);
+    return applyCornixCompatibility(normalizeVialLikeJson(parsed, fallback));
   }
 }

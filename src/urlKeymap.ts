@@ -1,4 +1,4 @@
-import { getCornixImportKeyIds, validateKeymap } from "./keymapParser";
+import { applyCornixCompatibility, getCornixImportKeyIds, validateKeymap } from "./keymapParser";
 import type { KeymapData, Layer } from "./types";
 
 const hashParam = "keymap";
@@ -53,11 +53,11 @@ function hydrateCompactKeymap(value: unknown, fallback: KeymapData): KeymapData 
     keys: Object.fromEntries(keyIds.map((keyId, keyIndex) => [keyId, keycodes[keyIndex] ?? "KC_NO"])),
   }));
 
-  return {
+  return applyCornixCompatibility({
     keyboard: fallback.keyboard,
     layout: fallback.layout,
     layers,
-  };
+  });
 }
 
 function bytesToBase64Url(bytes: Uint8Array) {
@@ -137,11 +137,11 @@ export async function decodeKeymapFromUrlPayload(payload: string, fallback: Keym
   }
 
   const full = validateKeymap(parsed);
-  return {
+  return applyCornixCompatibility({
     keyboard: fallback.keyboard,
     layout: fallback.layout,
     layers: full.layers,
-  };
+  });
 }
 
 export async function readKeymapFromCurrentUrl(fallback: KeymapData) {
