@@ -26,6 +26,10 @@ function compactLabel(label: string) {
 
 function getLines(presentation: KeycodePresentation) {
   const label = compactLabel(presentation.label);
+  if (label.includes("\n")) {
+    return label.split("\n");
+  }
+
   if (label.includes(" / ")) {
     return label.split(" / ");
   }
