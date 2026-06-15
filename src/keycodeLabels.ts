@@ -7,6 +7,12 @@ export type KeycodePresentation = {
   kind: KeycodeKind;
 };
 
+export type OutputCharacterMatch = {
+  character: string;
+  press: string;
+  shifted: boolean;
+};
+
 const baseLabels: Record<string, string> = {
   KC_1: "!\n1",
   KC_2: "@\n2",
@@ -150,6 +156,80 @@ const shiftedLabels: Record<string, string> = {
   KC_SLASH: "?",
 };
 
+const outputCharacters: Record<string, string> = {
+  KC_EXLM: "!",
+  KC_EXCLAIM: "!",
+  KC_AT: "@",
+  KC_HASH: "#",
+  KC_DLR: "$",
+  KC_DOLLAR: "$",
+  KC_PERC: "%",
+  KC_PERCENT: "%",
+  KC_CIRC: "^",
+  KC_CARET: "^",
+  KC_AMPR: "&",
+  KC_AMPERSAND: "&",
+  KC_ASTR: "*",
+  KC_ASTERISK: "*",
+  KC_LPRN: "(",
+  KC_LEFT_PAREN: "(",
+  KC_RPRN: ")",
+  KC_RIGHT_PAREN: ")",
+  KC_1: "1",
+  KC_2: "2",
+  KC_3: "3",
+  KC_4: "4",
+  KC_5: "5",
+  KC_6: "6",
+  KC_7: "7",
+  KC_8: "8",
+  KC_9: "9",
+  KC_0: "0",
+  KC_MINS: "-",
+  KC_MINUS: "-",
+  KC_UNDS: "_",
+  KC_UNDERSCORE: "_",
+  KC_EQL: "=",
+  KC_EQUAL: "=",
+  KC_PLUS: "+",
+  KC_LBRC: "[",
+  KC_LBRACKET: "[",
+  KC_LCBR: "{",
+  KC_LEFT_CURLY_BRACE: "{",
+  KC_RBRC: "]",
+  KC_RBRACKET: "]",
+  KC_RCBR: "}",
+  KC_RIGHT_CURLY_BRACE: "}",
+  KC_BSLS: "\\",
+  KC_BSLASH: "\\",
+  KC_PIPE: "|",
+  KC_SCLN: ";",
+  KC_SCOLON: ";",
+  KC_COLN: ":",
+  KC_COLON: ":",
+  KC_QUOT: "'",
+  KC_QUOTE: "'",
+  KC_DQUO: "\"",
+  KC_DOUBLE_QUOTE: "\"",
+  KC_GRV: "`",
+  KC_GRAVE: "`",
+  KC_TILD: "~",
+  KC_TILDE: "~",
+  KC_COMM: ",",
+  KC_COMMA: ",",
+  KC_LT: "<",
+  KC_LABK: "<",
+  KC_DOT: ".",
+  KC_GT: ">",
+  KC_RABK: ">",
+  KC_SLSH: "/",
+  KC_SLASH: "/",
+  KC_QUES: "?",
+  KC_QUESTION: "?",
+  KC_SPC: " ",
+  KC_SPACE: " ",
+};
+
 const modLabels: Record<string, string> = {
   MOD_LCTL: "LCtl",
   MOD_RCTL: "RCtl",
@@ -172,6 +252,15 @@ const modLabels: Record<string, string> = {
   KC_LGUI: "LGui",
   KC_RGUI: "RGui",
 };
+
+function getPressLabel(raw: string) {
+  const letter = raw.match(/^KC_([A-Z])$/);
+  if (letter) {
+    return letter[1];
+  }
+
+  return outputCharacters[raw] ?? getKeycodePresentation(raw).label ?? raw;
+}
 
 export function getKeycodePresentation(rawKeycode?: string): KeycodePresentation {
   const raw = (rawKeycode ?? "KC_NO").trim();
@@ -295,4 +384,81 @@ export function getKeycodePresentation(rawKeycode?: string): KeycodePresentation
     description: "Unknown keycode",
     kind: "unknown",
   };
+}
+
+export function getDirectOutputCharacter(rawKeycode?: string): string | undefined {
+  return getOutputCharacterMatch(rawKeycode)?.character;
+}
+
+export function getOutputCharacterMatches(rawKeycode?: string): OutputCharacterMatch[] {
+  const raw = (rawKeycode ?? "KC_NO").trim();
+
+  if (raw === "KC_NO" || raw === "XXXXXXX" || raw === "" || raw === "KC_TRNS" || raw === "_______") {
+    return [];
+  }
+
+  const tapHold = raw.match(/^(?:LT|MT)\([^,]+,\s*(.+)\)$/);
+  if (tapHold) {
+    return getOutputCharacterMatches(tapHold[1].trim());
+  }
+
+  const shifted = raw.match(/^(?:S|LSFT)\((.+)\)$/);
+  if (shifted) {
+    const inner = shifted[1].trim();
+    const letter = inner.match(/^KC_([A-Z])$/);
+    const character = letter ? letter[1] : shiftedLabels[inner];
+    if (!character) {
+      return [];
+    }
+
+    return [{
+      character,
+      press: `Shift + ${getPressLabel(inner)}`,
+      shifted: true,
+    }];
+  }
+
+  const letter = raw.match(/^KC_([A-Z])$/);
+  if (letter) {
+    const lower = letter[1].toLowerCase();
+    return [
+      {
+        character: lower,
+        press: letter[1],
+        shifted: false,
+      },
+      {
+        character: letter[1],
+        press: `Shift + ${letter[1]}`,
+        shifted: true,
+      },
+    ];
+  }
+
+  const baseCharacter = outputCharacters[raw];
+  const shiftedCharacter = shiftedLabels[raw];
+  const matches: OutputCharacterMatch[] = [];
+
+  if (baseCharacter) {
+    matches.push({
+      character: baseCharacter,
+      press: getPressLabel(raw),
+      shifted: false,
+    });
+  }
+
+  if (shiftedCharacter) {
+    matches.push({
+      character: shiftedCharacter,
+      press: `Shift + ${getPressLabel(raw)}`,
+      shifted: true,
+    });
+  }
+
+  return matches;
+}
+
+export function getOutputCharacterMatch(rawKeycode?: string, targetCharacter?: string): OutputCharacterMatch | undefined {
+  const matches = getOutputCharacterMatches(rawKeycode);
+  return targetCharacter === undefined ? matches[0] : matches.find((match) => match.character === targetCharacter);
 }

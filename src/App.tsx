@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { FileDropZone } from "./components/FileDropZone";
-import { KeyDetail } from "./components/KeyDetail";
 import { KeyboardView } from "./components/KeyboardView";
 import { LayerTabs } from "./components/LayerTabs";
+import { TypingPractice } from "./components/TypingPractice";
 import { parseDroppedKeymap, validateKeymap } from "./keymapParser";
+import { findPracticeCandidates, type PracticeCandidate } from "./practiceSearch";
 import type { KeymapData } from "./types";
 import { readKeymapFromCurrentUrl, writeKeymapToUrl } from "./urlKeymap";
 import "./styles.css";
@@ -27,11 +28,11 @@ export default function App() {
   const [data, setData] = useState<KeymapData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeLayerIndex, setActiveLayerIndex] = useState(0);
-  const [selectedKeyId, setSelectedKeyId] = useState<string | undefined>();
   const [showBaseForTransparent, setShowBaseForTransparent] = useState(false);
   const [fileStatus, setFileStatus] = useState<string | undefined>();
   const [shareStatus, setShareStatus] = useState<string | undefined>();
   const [shareUrl, setShareUrl] = useState<string | undefined>();
+  const [practiceCharacters, setPracticeCharacters] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,14 +50,13 @@ export default function App() {
         if (!cancelled) {
           setData(initialData);
           setActiveLayerIndex(getInitialLayerIndex(initialData.layers.length));
-          setSelectedKeyId(initialData.layout.keys[0]?.id);
           if (urlKeymap) {
-            setFileStatus("Loaded keymap from URL");
+            setFileStatus("URL からキーマップを読み込みました");
           }
         }
       } catch (loadError) {
         if (!cancelled) {
-          setError(loadError instanceof Error ? loadError.message : "Failed to load keymap.json.");
+          setError(loadError instanceof Error ? loadError.message : "keymap.json の読み込みに失敗しました。");
         }
       }
     }
@@ -72,10 +72,18 @@ export default function App() {
     window.localStorage.setItem(storageKey, String(activeLayerIndex));
   }, [activeLayerIndex]);
 
-  const selectedGeometry = useMemo(
-    () => data?.layout.keys.find((key) => key.id === selectedKeyId),
-    [data, selectedKeyId],
-  );
+  const highlightedKeyIds = useMemo(() => {
+    if (!data || practiceCharacters.length === 0) {
+      return undefined;
+    }
+
+    const keyIds = practiceCharacters
+      .flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))
+      .filter((candidate) => candidate.layerIndex === activeLayerIndex)
+      .map((candidate) => candidate.keyId);
+
+    return new Set(keyIds);
+  }, [activeLayerIndex, data, practiceCharacters]);
 
   function applyDroppedFile(text: string, fileName: string) {
     if (!data) {
@@ -87,12 +95,11 @@ export default function App() {
       setData(dropped);
       setError(null);
       setActiveLayerIndex(0);
-      setSelectedKeyId(dropped.layout.keys[0]?.id);
-      setFileStatus(`${fileName} loaded (${dropped.layers.length} layers)`);
+      setFileStatus(`${fileName} を読み込みました (${dropped.layers.length} レイヤー)`);
       setShareStatus(undefined);
       setShareUrl(undefined);
     } catch (dropError) {
-      setFileStatus(dropError instanceof Error ? dropError.message : "Failed to read dropped file.");
+      setFileStatus(dropError instanceof Error ? dropError.message : "ファイルの読み込みに失敗しました。");
     }
   }
 
@@ -106,20 +113,25 @@ export default function App() {
       setShareUrl(url);
       try {
         await navigator.clipboard.writeText(url);
-        setShareStatus("URL copied");
+        setShareStatus("URL をコピーしました");
       } catch {
-        setShareStatus("URL updated. Copy it from the field or address bar.");
+        setShareStatus("URL を更新しました。入力欄またはアドレスバーからコピーできます。");
       }
     } catch (shareError) {
-      setShareStatus(shareError instanceof Error ? shareError.message : "Failed to create URL.");
+      setShareStatus(shareError instanceof Error ? shareError.message : "URL の作成に失敗しました。");
     }
+  }
+
+  function pickPracticeCandidate(candidate: PracticeCandidate) {
+    setPracticeCharacters([candidate.character]);
+    setActiveLayerIndex(candidate.layerIndex);
   }
 
   if (error) {
     return (
       <main className="app-shell">
         <section className="error-panel">
-          <h1>Keymap load error</h1>
+          <h1>キーマップ読み込みエラー</h1>
           <p>{error}</p>
         </section>
       </main>
@@ -129,7 +141,7 @@ export default function App() {
   if (!data) {
     return (
       <main className="app-shell">
-        <section className="loading-panel">Loading keymap…</section>
+        <section className="loading-panel">キーマップを読み込み中…</section>
       </main>
     );
   }
@@ -139,7 +151,7 @@ export default function App() {
       <header className="app-header">
         <div>
           <h1>{data.keyboard}</h1>
-          <p>Read-only Vial keymap viewer</p>
+          <p>Vial キーマップ確認ビューア</p>
         </div>
         <div className="header-actions">
           <label className="toggle">
@@ -148,10 +160,10 @@ export default function App() {
               checked={showBaseForTransparent}
               onChange={(event) => setShowBaseForTransparent(event.target.checked)}
             />
-            <span>Base ghost</span>
+            <span>ベース表示</span>
           </label>
           <button type="button" className="share-button" onClick={createShareUrl}>
-            Copy URL
+            URLコピー
           </button>
         </div>
       </header>
@@ -165,7 +177,7 @@ export default function App() {
               readOnly
               value={shareUrl}
               onFocus={(event) => event.currentTarget.select()}
-              aria-label="Generated keymap URL"
+              aria-label="生成されたキーマップ URL"
             />
           ) : null}
         </div>
@@ -175,19 +187,12 @@ export default function App() {
 
       <FileDropZone onFileText={applyDroppedFile} status={fileStatus} />
 
+      <TypingPractice data={data} onQueryChange={setPracticeCharacters} onPickCandidate={pickPracticeCandidate} />
+
       <KeyboardView
         data={data}
         layerIndex={activeLayerIndex}
-        selectedKeyId={selectedKeyId}
-        showBaseForTransparent={showBaseForTransparent}
-        onSelectKey={setSelectedKeyId}
-      />
-
-      <KeyDetail
-        keyId={selectedKeyId}
-        geometry={selectedGeometry}
-        layer={data.layers[activeLayerIndex]}
-        baseLayer={data.layers[0]}
+        highlightedKeyIds={highlightedKeyIds}
         showBaseForTransparent={showBaseForTransparent}
       />
     </main>

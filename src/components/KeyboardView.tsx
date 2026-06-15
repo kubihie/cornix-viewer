@@ -5,9 +5,8 @@ import { Keycap } from "./Keycap";
 type KeyboardViewProps = {
   data: KeymapData;
   layerIndex: number;
-  selectedKeyId?: string;
+  highlightedKeyIds?: ReadonlySet<string>;
   showBaseForTransparent: boolean;
-  onSelectKey: (id: string) => void;
 };
 
 type Units = {
@@ -93,17 +92,15 @@ function KeyboardItem({
   pixelGeometry,
   data,
   layerIndex,
-  selectedKeyId,
+  highlightedKeyIds,
   showBaseForTransparent,
-  onSelectKey,
 }: {
   keyGeometry: KeyGeometry;
   pixelGeometry: PixelGeometry;
   data: KeymapData;
   layerIndex: number;
-  selectedKeyId?: string;
+  highlightedKeyIds?: ReadonlySet<string>;
   showBaseForTransparent: boolean;
-  onSelectKey: (id: string) => void;
 }) {
   const layer = data.layers[layerIndex];
   const baseLayer = data.layers[0];
@@ -114,8 +111,6 @@ function KeyboardItem({
       <EncoderKnob
         id={keyGeometry.id}
         raw={raw}
-        selected={selectedKeyId === keyGeometry.id}
-        onSelect={onSelectKey}
         rotation={keyGeometry.r}
         {...pixelGeometry}
       />
@@ -127,9 +122,8 @@ function KeyboardItem({
       id={keyGeometry.id}
       raw={raw}
       baseRaw={baseLayer.keys[keyGeometry.id]}
-      selected={selectedKeyId === keyGeometry.id}
+      highlighted={highlightedKeyIds?.has(keyGeometry.id) ?? false}
       showBaseForTransparent={showBaseForTransparent}
-      onSelect={onSelectKey}
       rotation={keyGeometry.r}
       {...pixelGeometry}
     />
@@ -140,16 +134,14 @@ function CombinedKeyboardSvg({
   keys,
   data,
   layerIndex,
-  selectedKeyId,
+  highlightedKeyIds,
   showBaseForTransparent,
-  onSelectKey,
 }: {
   keys: KeyGeometry[];
   data: KeymapData;
   layerIndex: number;
-  selectedKeyId?: string;
+  highlightedKeyIds?: ReadonlySet<string>;
   showBaseForTransparent: boolean;
-  onSelectKey: (id: string) => void;
 }) {
   const units = getUnits(data);
   const bounds = getBounds(keys, units);
@@ -175,9 +167,8 @@ function CombinedKeyboardSvg({
               pixelGeometry={geometry}
               data={data}
               layerIndex={layerIndex}
-              selectedKeyId={selectedKeyId}
+              highlightedKeyIds={highlightedKeyIds}
               showBaseForTransparent={showBaseForTransparent}
-              onSelectKey={onSelectKey}
             />
           );
         })}
@@ -189,9 +180,8 @@ function CombinedKeyboardSvg({
 export function KeyboardView({
   data,
   layerIndex,
-  selectedKeyId,
+  highlightedKeyIds,
   showBaseForTransparent,
-  onSelectKey,
 }: KeyboardViewProps) {
   return (
     <div className="keyboard-scroll" aria-label="Keyboard layout">
@@ -200,9 +190,8 @@ export function KeyboardView({
           keys={data.layout.keys}
           data={data}
           layerIndex={layerIndex}
-          selectedKeyId={selectedKeyId}
+          highlightedKeyIds={highlightedKeyIds}
           showBaseForTransparent={showBaseForTransparent}
-          onSelectKey={onSelectKey}
         />
       </div>
     </div>
