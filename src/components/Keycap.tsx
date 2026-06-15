@@ -10,10 +10,9 @@ type KeycapProps = {
   rotation?: number;
   originX?: number;
   originY?: number;
-  selected: boolean;
+  highlighted: boolean;
   baseRaw?: string;
   showBaseForTransparent: boolean;
-  onSelect: (id: string) => void;
 };
 
 function compactLabel(label: string) {
@@ -52,10 +51,9 @@ export function Keycap({
   rotation = 0,
   originX,
   originY,
-  selected,
+  highlighted,
   baseRaw,
   showBaseForTransparent,
-  onSelect,
 }: KeycapProps) {
   const presentation = getKeycodePresentation(raw);
   const basePresentation = getKeycodePresentation(baseRaw);
@@ -67,7 +65,7 @@ export function Keycap({
   const fontSize = Math.max(8.5, Math.min(14, longest > 10 ? 10 : longest > 7 ? 11.5 : 13));
   const className = [
     "keycap",
-    selected ? "selected" : "",
+    highlighted ? "highlighted" : "",
     presentation.kind === "transparent" ? "transparent" : "",
     presentation.kind === "empty" ? "empty" : "",
     presentation.kind === "layer" ? "layer" : "",
@@ -85,16 +83,7 @@ export function Keycap({
           ? `rotate(${rotation} ${originX} ${originY})`
           : `translate(${x} ${y}) rotate(${rotation} ${width / 2} ${height / 2})`
       }
-      role="button"
-      tabIndex={0}
       aria-label={`${id}: ${presentation.label || presentation.raw}`}
-      onClick={() => onSelect(id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect(id);
-        }
-      }}
     >
       <g transform={usesLayoutOrigin ? `translate(${x} ${y})` : undefined}>
         <rect width={width} height={height} rx="7" ry="7" />

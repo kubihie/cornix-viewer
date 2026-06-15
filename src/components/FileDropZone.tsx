@@ -30,15 +30,15 @@ export function FileDropZone({ onFileText, status }: FileDropZoneProps) {
         setIsDragging(false);
         readFile(event.dataTransfer.files[0]);
       }}
-      aria-label="Drop keymap file"
+      aria-label="キーマップファイルを読み込む"
     >
       <div>
-        <div className="drop-title">Drop .vil or keymap.json</div>
-        <div className="drop-copy">File stays in this browser session. No keyboard connection is used.</div>
+        <div className="drop-title">.vil または keymap.json をドロップ</div>
+        <div className="drop-copy">ファイルはこのブラウザ内だけで読み込みます。キーボードには接続しません。</div>
         {status ? <div className="drop-status">{status}</div> : null}
       </div>
       <button type="button" className="file-button" onClick={() => inputRef.current?.click()}>
-        Choose file
+        ファイルを選択
       </button>
       <input
         ref={inputRef}
