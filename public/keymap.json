@@ -87,6 +87,7 @@
         "L30": "KC_LGUI",
         "L31": "LT(1, KC_SPC)",
         "L32": "MO(2)",
+        "LENC": "KC_MUTE",
         "R00": "KC_Y",
         "R01": "KC_U",
         "R02": "KC_I",
@@ -110,7 +111,8 @@
         "R35": "KC_RCTL",
         "R30": "MO(1)",
         "R31": "LT(2, KC_ENT)",
-        "R32": "KC_RCTL"
+        "R32": "KC_RCTL",
+        "RENC": "M0"
       }
     },
     {
@@ -140,6 +142,7 @@
         "L30": "KC_TRNS",
         "L31": "KC_TRNS",
         "L32": "KC_TRNS",
+        "LENC": "KC_MUTE",
         "R00": "S(KC_6)",
         "R01": "S(KC_7)",
         "R02": "S(KC_8)",
@@ -163,7 +166,8 @@
         "R35": "KC_TRNS",
         "R30": "KC_TRNS",
         "R31": "KC_TRNS",
-        "R32": "KC_TRNS"
+        "R32": "KC_TRNS",
+        "RENC": "M0"
       }
     },
     {
@@ -193,6 +197,7 @@
         "L30": "KC_TRNS",
         "L31": "KC_TRNS",
         "L32": "KC_TRNS",
+        "LENC": "KC_MUTE",
         "R00": "KC_HOME",
         "R01": "KC_PGDN",
         "R02": "KC_PGUP",
@@ -216,7 +221,8 @@
         "R35": "KC_TRNS",
         "R30": "KC_TRNS",
         "R31": "KC_TRNS",
-        "R32": "KC_TRNS"
+        "R32": "KC_TRNS",
+        "RENC": "M0"
       }
     },
     {
@@ -246,6 +252,7 @@
         "L30": "KC_TRNS",
         "L31": "KC_TRNS",
         "L32": "TG(1)",
+        "LENC": "KC_MUTE",
         "R00": "KC_NO",
         "R01": "KC_NO",
         "R02": "KC_NO",
@@ -269,7 +276,8 @@
         "R35": "KC_TRNS",
         "R30": "TG(2)",
         "R31": "KC_TRNS",
-        "R32": "KC_TRNS"
+        "R32": "KC_TRNS",
+        "RENC": "M0"
       }
     }
   ]

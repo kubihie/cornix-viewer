@@ -89,11 +89,13 @@ function KeyboardItem({
 }) {
   const layer = data.layers[layerIndex];
   const baseLayer = data.layers[0];
+  const raw = layer.keys[keyGeometry.id] ?? "KC_NO";
 
   if (keyGeometry.kind === "encoder") {
     return (
       <EncoderKnob
         id={keyGeometry.id}
+        raw={raw}
         selected={selectedKeyId === keyGeometry.id}
         onSelect={onSelectKey}
         rotation={keyGeometry.r}
@@ -101,8 +103,6 @@ function KeyboardItem({
       />
     );
   }
-
-  const raw = layer.keys[keyGeometry.id] ?? "KC_NO";
 
   return (
     <Keycap

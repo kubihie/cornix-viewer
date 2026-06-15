@@ -1,10 +1,11 @@
-import { validateKeymap } from "./keymapParser";
+import { getCornixImportKeyIds, validateKeymap } from "./keymapParser";
 import type { KeymapData, Layer } from "./types";
 
 const hashParam = "keymap";
 
 type CompactKeymap = {
-  v: 1;
+  v: 1 | 2;
+  i?: string[];
   n: string[];
   k: string[][];
 };
@@ -14,25 +15,29 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function getUrlKeyIds(data: KeymapData) {
-  return data.layout.keys.filter((key) => key.kind !== "encoder").map((key) => key.id);
+  return data.layout.keys.map((key) => key.id);
 }
 
 function compactKeymap(data: KeymapData): CompactKeymap {
   const keyIds = getUrlKeyIds(data);
 
   return {
-    v: 1,
+    v: 2,
+    i: keyIds,
     n: data.layers.map((layer) => layer.name),
     k: data.layers.map((layer) => keyIds.map((keyId) => layer.keys[keyId] ?? "KC_NO")),
   };
 }
 
 function hydrateCompactKeymap(value: unknown, fallback: KeymapData): KeymapData | undefined {
-  if (!isObject(value) || value.v !== 1 || !Array.isArray(value.n) || !Array.isArray(value.k)) {
+  if (!isObject(value) || (value.v !== 1 && value.v !== 2) || !Array.isArray(value.n) || !Array.isArray(value.k)) {
     return undefined;
   }
 
-  const keyIds = getUrlKeyIds(fallback);
+  const keyIds =
+    value.v === 2 && Array.isArray(value.i) && value.i.every((keyId) => typeof keyId === "string")
+      ? value.i
+      : getCornixImportKeyIds(fallback);
   const names = value.n;
   const keycodeLayers = value.k;
 

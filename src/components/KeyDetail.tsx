@@ -20,7 +20,10 @@ export function KeyDetail({
     return null;
   }
 
-  if (geometry?.kind === "encoder") {
+  const raw = layer.keys[keyId] ?? "KC_NO";
+  const presentation = getKeycodePresentation(raw);
+
+  if (geometry?.kind === "encoder" && presentation.kind === "empty") {
     return (
       <aside className="key-detail" aria-label="Key detail">
         <div>
@@ -43,8 +46,6 @@ export function KeyDetail({
     );
   }
 
-  const raw = layer.keys[keyId] ?? "KC_NO";
-  const presentation = getKeycodePresentation(raw);
   const baseRaw = baseLayer?.keys[keyId];
   const basePresentation = getKeycodePresentation(baseRaw);
   const baseText =
