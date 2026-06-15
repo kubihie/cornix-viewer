@@ -199,23 +199,12 @@ input {
 }
 
 .keyboard-stage {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 22px;
-  width: min(100%, 920px);
-  min-width: 640px;
+  width: min(100%, 980px);
+  min-width: 860px;
 }
 
-.hand-section {
+.keyboard-section {
   min-width: 0;
-}
-
-.hand-title {
-  margin: 0 0 8px;
-  color: #65717a;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 .keyboard-svg {
@@ -436,8 +425,7 @@ input {
   }
 
   .keyboard-stage {
-    min-width: 620px;
-    gap: 16px;
+    min-width: 860px;
   }
 
   .key-detail {

@@ -16,6 +16,13 @@ type Units = {
   gap: number;
 };
 
+type PixelGeometry = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 function getUnits(data: KeymapData): Units {
   return {
     keyWidth: data.layout.units?.keyWidth ?? 56,
@@ -24,7 +31,7 @@ function getUnits(data: KeymapData): Units {
   };
 }
 
-function getPixelGeometry(key: KeyGeometry, units: Units) {
+function getPixelGeometry(key: KeyGeometry, units: Units): PixelGeometry {
   const widthUnits = key.w ?? 1;
   const heightUnits = key.h ?? 1;
 
@@ -46,8 +53,72 @@ function getBounds(keys: KeyGeometry[], units: Units) {
   return { minX, minY, width: maxX - minX, height: maxY - minY };
 }
 
-function HandSvg({
-  title,
+function getHandOffset(
+  hand: KeyGeometry["hand"],
+  leftBounds: ReturnType<typeof getBounds>,
+  rightBounds: ReturnType<typeof getBounds>,
+  units: Units,
+) {
+  if (hand === "left") {
+    return { x: -leftBounds.minX, y: -Math.min(leftBounds.minY, rightBounds.minY) };
+  }
+
+  const centerGap = units.keyWidth * 1.18;
+  return {
+    x: leftBounds.width + centerGap - rightBounds.minX,
+    y: -Math.min(leftBounds.minY, rightBounds.minY),
+  };
+}
+
+function KeyboardItem({
+  keyGeometry,
+  pixelGeometry,
+  data,
+  layerIndex,
+  selectedKeyId,
+  showBaseForTransparent,
+  onSelectKey,
+}: {
+  keyGeometry: KeyGeometry;
+  pixelGeometry: PixelGeometry;
+  data: KeymapData;
+  layerIndex: number;
+  selectedKeyId?: string;
+  showBaseForTransparent: boolean;
+  onSelectKey: (id: string) => void;
+}) {
+  const layer = data.layers[layerIndex];
+  const baseLayer = data.layers[0];
+
+  if (keyGeometry.kind === "encoder") {
+    return (
+      <EncoderKnob
+        id={keyGeometry.id}
+        selected={selectedKeyId === keyGeometry.id}
+        onSelect={onSelectKey}
+        rotation={keyGeometry.r}
+        {...pixelGeometry}
+      />
+    );
+  }
+
+  const raw = layer.keys[keyGeometry.id] ?? "KC_NO";
+
+  return (
+    <Keycap
+      id={keyGeometry.id}
+      raw={raw}
+      baseRaw={baseLayer.keys[keyGeometry.id]}
+      selected={selectedKeyId === keyGeometry.id}
+      showBaseForTransparent={showBaseForTransparent}
+      onSelect={onSelectKey}
+      rotation={keyGeometry.r}
+      {...pixelGeometry}
+    />
+  );
+}
+
+function CombinedKeyboardSvg({
   keys,
   data,
   layerIndex,
@@ -55,7 +126,6 @@ function HandSvg({
   showBaseForTransparent,
   onSelectKey,
 }: {
-  title: string;
   keys: KeyGeometry[];
   data: KeymapData;
   layerIndex: number;
@@ -64,47 +134,42 @@ function HandSvg({
   onSelectKey: (id: string) => void;
 }) {
   const units = getUnits(data);
-  const bounds = getBounds(keys, units);
-  const layer = data.layers[layerIndex];
-  const baseLayer = data.layers[0];
+  const leftKeys = keys.filter((key) => key.hand === "left");
+  const rightKeys = keys.filter((key) => key.hand === "right");
+  const leftBounds = getBounds(leftKeys, units);
+  const rightBounds = getBounds(rightKeys, units);
+  const minY = Math.min(leftBounds.minY, rightBounds.minY);
+  const height = Math.max(leftBounds.minY + leftBounds.height, rightBounds.minY + rightBounds.height) - minY;
+  const centerGap = units.keyWidth * 1.18;
+  const width = leftBounds.width + centerGap + rightBounds.width;
 
   return (
-    <section className="hand-section" aria-label={title}>
-      <div className="hand-title">{title}</div>
+    <section className="keyboard-section" aria-label="Cornix LP keyboard">
       <svg
         className="keyboard-svg"
-        viewBox={`${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`}
+        viewBox={`0 0 ${width} ${height}`}
         role="group"
-        aria-label={`${title} keys`}
+        aria-label="Keyboard keys"
       >
         {keys.map((key) => {
+          const offset = getHandOffset(key.hand, leftBounds, rightBounds, units);
           const geometry = getPixelGeometry(key, units);
-          if (key.kind === "encoder") {
-            return (
-              <EncoderKnob
-                key={key.id}
-                id={key.id}
-                selected={selectedKeyId === key.id}
-                onSelect={onSelectKey}
-                rotation={key.r}
-                {...geometry}
-              />
-            );
-          }
-
-          const raw = layer.keys[key.id] ?? "KC_NO";
+          const translatedGeometry = {
+            ...geometry,
+            x: geometry.x + offset.x,
+            y: geometry.y + offset.y,
+          };
 
           return (
-            <Keycap
+            <KeyboardItem
               key={key.id}
-              id={key.id}
-              raw={raw}
-              baseRaw={baseLayer.keys[key.id]}
-              selected={selectedKeyId === key.id}
+              keyGeometry={key}
+              pixelGeometry={translatedGeometry}
+              data={data}
+              layerIndex={layerIndex}
+              selectedKeyId={selectedKeyId}
               showBaseForTransparent={showBaseForTransparent}
-              onSelect={onSelectKey}
-              rotation={key.r}
-              {...geometry}
+              onSelectKey={onSelectKey}
             />
           );
         })}
@@ -120,24 +185,11 @@ export function KeyboardView({
   showBaseForTransparent,
   onSelectKey,
 }: KeyboardViewProps) {
-  const leftKeys = data.layout.keys.filter((key) => key.hand === "left");
-  const rightKeys = data.layout.keys.filter((key) => key.hand === "right");
-
   return (
     <div className="keyboard-scroll" aria-label="Keyboard layout">
       <div className="keyboard-stage">
-        <HandSvg
-          title="Left"
-          keys={leftKeys}
-          data={data}
-          layerIndex={layerIndex}
-          selectedKeyId={selectedKeyId}
-          showBaseForTransparent={showBaseForTransparent}
-          onSelectKey={onSelectKey}
-        />
-        <HandSvg
-          title="Right"
-          keys={rightKeys}
+        <CombinedKeyboardSvg
+          keys={data.layout.keys}
           data={data}
           layerIndex={layerIndex}
           selectedKeyId={selectedKeyId}
