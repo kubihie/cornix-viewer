@@ -8,58 +8,183 @@ type TypingPracticeProps = {
   onPickCandidate: (candidate: PracticeCandidate) => void;
 };
 
+const jp = (display: string, kana: string) => ({ display, kana });
+const textPrompt = (input: string) => ({ display: input, input });
+
+const japanesePrompts = [
+  jp("こんにちは、Cornix。", "こんにちは、cornix。"),
+  jp("日本語入力も練習できます。", "にほんごにゅうりょくもれんしゅうできます。"),
+  jp("今日はキー配列を覚えます。", "きょうはきーはいれつをおぼえます。"),
+  jp("左右の親指をうまく使います。", "さゆうのおやゆびをうまくつかいます。"),
+  jp("記号の場所を少しずつ覚えます。", "きごうのばしょをすこしずつおぼえます。"),
+  jp("焦らず正確に入力します。", "あせらずせいかくににゅうりょくします。"),
+  jp("レイヤーキーを自然に押せるようにします。", "れいやーきーをしぜんにおせるようにします。"),
+  jp("短い文章からテンポを作ります。", "みじかいぶんしょうからてんぽをつくります。"),
+  jp("手元を見ずに打てると楽しいです。", "てもとをみずにうてるとたのしいです。"),
+  jp("小さなミスをすぐ直します。", "ちいさなみすをすぐなおします。"),
+  jp("親指の動きを軽くします。", "おやゆびのうごきをかるくします。"),
+  jp("次のキーを見つけてから押します。", "つぎのきーをみつけてからおします。"),
+  jp("慣れるまではゆっくりで大丈夫です。", "なれるまではゆっくりでだいじょうぶです。"),
+  jp("記号入力の苦手を減らします。", "きごうにゅうりょくのにがてをへらします。"),
+  jp("同じ文章でも速さが変わります。", "おなじぶんしょうでもはやさがかわります。"),
+  jp("ゲーム感覚で配列を覚えます。", "げーむかんかくではいれつをおぼえます。"),
+  jp("一文字ずつリズムを刻みます。", "いちもじずつりずむをきざみます。"),
+  jp("次のレイヤーにすばやく移ります。", "つぎのれいやーにすばやくうつります。"),
+  jp("速さよりも流れを大事にします。", "はやさよりもながれをだいじにします。"),
+  jp("打鍵音に合わせて進みます。", "だけんおんにあわせてすすみます。"),
+  jp("今日は少しだけ上達しました。", "きょうはすこしだけじょうたつしました。"),
+  jp("難しい記号も何度も練習します。", "むずかしいきごうもなんどもれんしゅうします。"),
+  jp("右手の下段をしっかり覚えます。", "みぎてのげだんをしっかりおぼえます。"),
+  jp("左手の親指キーを迷わず押します。", "ひだりてのおやゆびきーをまよわずおします。"),
+  jp("打ち終わったら次の文へ進みます。", "うちおわったらつぎのぶんへすすみます。"),
+  jp("気持ちよい連続入力を目指します。", "きもちよいれんぞくにゅうりょくをめざします。"),
+  jp("小指に頼りすぎない配列です。", "こゆびにたよりすぎないはいれつです。"),
+  jp("記憶と反射を少しずつつなげます。", "きおくとはんしゃをすこしずつつなげます。"),
+  jp("焦ったときほど姿勢を戻します。", "あせったときほどしせいをもどします。"),
+  jp("画面のヒントを見て場所を覚えます。", "がめんのひんとをみてばしょをおぼえます。"),
+  jp("毎日少しだけ練習を続けます。", "まいにちすこしだけれんしゅうをつづけます。"),
+  jp("反応が良いと続けたくなります。", "はんのうがよいとつづけたくなります。"),
+  jp("記号の連打にも慣れていきます。", "きごうのれんだにもなれていきます。"),
+  jp("新しい配列でも遊びながら覚えます。", "あたらしいはいれつでもあそびながらおぼえます。"),
+  jp("上下左右のキーも正しく使います。", "じょうげさゆうのきーもただしくつかいます。"),
+  jp("ミスを恐れずもう一度打ちます。", "みすをおそれずもういちどうちます。"),
+  jp("文字が進むと気分も乗ってきます。", "もじがすすむときぶんものってきます。"),
+  jp("指の移動距離を短くします。", "ゆびのいどうきょりをみじかくします。"),
+  jp("次の候補を見ながら覚えます。", "つぎのこうほをみながらおぼえます。"),
+  jp("最後まで集中して打ち切ります。", "さいごまでしゅうちゅうしてうちきります。"),
+];
+
+const englishBasePrompts = [
+  "Hello, Cornix!",
+  "Keep your rhythm.",
+  "Type fast and stay relaxed.",
+  "Small wins build speed.",
+  "Layer keys need practice.",
+  "Accuracy comes first.",
+  "Find the key, then flow.",
+  "One more clean streak!",
+  "Trust the next key.",
+  "Keep both thumbs ready.",
+  "Symbols are part of the game.",
+  "Smooth typing feels great.",
+];
+
+const englishSubjects = [
+  "Layer keys",
+  "Thumb keys",
+  "Clean streaks",
+  "Small symbols",
+  "Fast fingers",
+  "Good rhythm",
+  "Every mistake",
+  "The next prompt",
+  "Your keymap",
+  "Short practice",
+  "Quick feedback",
+  "Steady focus",
+];
+
+const englishActions = [
+  "build better memory",
+  "make the layout feel natural",
+  "turn practice into flow",
+  "keep the pace alive",
+  "teach the hands to move",
+  "reward careful typing",
+  "help the next run",
+  "make symbols less scary",
+];
+
+const englishPrompts = [
+  ...englishBasePrompts.map(textPrompt),
+  ...englishSubjects.flatMap((subject) => englishActions.map((action) => textPrompt(`${subject} ${action}.`))),
+];
+
+const codeBasePrompts = [
+  "const x = 42;",
+  "if (ok) return true;",
+  "items.map(v => v + 1);",
+  "user?.name ?? \"guest\"",
+  "for (const item of items) {}",
+  "return value.trim();",
+  "type Key = string | number;",
+  "console.log({ score });",
+  "const done = count > 0;",
+  "await save({ id, value });",
+  "array.filter(Boolean);",
+  "throw new Error(\"failed\");",
+];
+
+const codeNames = ["score", "combo", "layer", "keymap", "prompt", "timer", "result", "input", "cursor", "target"];
+const codeMethods = ["trim", "toLowerCase", "toUpperCase", "slice", "map", "filter", "join", "split", "reduce", "some", "every", "find"];
+const codePrompts = [
+  ...codeBasePrompts.map(textPrompt),
+  ...codeNames.flatMap((name) => [
+    textPrompt(`const ${name} = state.${name};`),
+    textPrompt(`set${name[0].toUpperCase()}${name.slice(1)}(${name} + 1);`),
+    textPrompt(`if (!${name}) return null;`),
+    textPrompt(`data.${name}?.value ?? 0`),
+  ]),
+  ...codeMethods.flatMap((method) => [
+    textPrompt(`value.${method}();`),
+    textPrompt(`items.${method}(item => item.id);`),
+  ]),
+];
+
+const symbolBasePrompts = [
+  "- _ + = { } [ ]",
+  "!?;:,. / \\ |",
+  "A-Z 0-9",
+  "() => []",
+  "< > \" ' ` ~",
+  "$ & * # @ % ^",
+  "== != <= >=",
+  "{ key: \"value\" }",
+  "foo_bar-baz",
+  "path/to/file.ts",
+  "name: value;",
+  "[1, 2, 3]",
+];
+
+const symbolGroups = [
+  ["-", "_", "+", "="],
+  ["{", "}", "[", "]"],
+  ["(", ")", "<", ">"],
+  ["!", "?", ";", ":"],
+  ["\"", "'", "`", "~"],
+  ["$", "&", "*", "#"],
+  ["/", "\\", "|", "."],
+  ["==", "!=", "<=", ">="],
+];
+
+const symbolPrompts = [
+  ...symbolBasePrompts.map(textPrompt),
+  ...symbolGroups.flatMap((group) => [
+    textPrompt(group.join(" ")),
+    textPrompt(group.join("")),
+    textPrompt(`${group[0]} ${group[1]} ${group[2]} ${group[3]} ${group[2]} ${group[1]} ${group[0]}`),
+  ]),
+  ...symbolGroups.flatMap((left) =>
+    symbolGroups.map((right) => textPrompt(`${left[0]}${right[1]} ${left[1]}${right[2]} ${left[2]}${right[3]}`)),
+  ),
+];
+
 const promptSets = {
   japanese: {
     label: "日本語",
-    prompts: [
-      { display: "こんにちは、Cornix。", kana: "こんにちは、cornix。" },
-      { display: "日本語入力も練習できます。", kana: "にほんごにゅうりょくもれんしゅうできます。" },
-      { display: "今日はキー配列を覚えます。", kana: "きょうはきーはいれつをおぼえます。" },
-      { display: "左右の親指をうまく使います。", kana: "さゆうのおやゆびをうまくつかいます。" },
-      { display: "記号の場所を少しずつ覚えます。", kana: "きごうのばしょをすこしずつおぼえます。" },
-      { display: "焦らず正確に入力します。", kana: "あせらずせいかくににゅうりょくします。" },
-      { display: "レイヤーキーを自然に押せるようにします。", kana: "れいやーきーをしぜんにおせるようにします。" },
-      { display: "短い文章からテンポを作ります。", kana: "みじかいぶんしょうからてんぽをつくります。" },
-    ],
+    prompts: japanesePrompts,
   },
   english: {
     label: "英語",
-    prompts: [
-      { display: "Hello, Cornix!", input: "Hello, Cornix!" },
-      { display: "Keep your rhythm.", input: "Keep your rhythm." },
-      { display: "Type fast and stay relaxed.", input: "Type fast and stay relaxed." },
-      { display: "Small wins build speed.", input: "Small wins build speed." },
-      { display: "Layer keys need practice.", input: "Layer keys need practice." },
-      { display: "Accuracy comes first.", input: "Accuracy comes first." },
-      { display: "Find the key, then flow.", input: "Find the key, then flow." },
-      { display: "One more clean streak!", input: "One more clean streak!" },
-    ],
+    prompts: englishPrompts,
   },
   code: {
     label: "コード",
-    prompts: [
-      { display: "const x = 42;", input: "const x = 42;" },
-      { display: "if (ok) return true;", input: "if (ok) return true;" },
-      { display: "items.map(v => v + 1);", input: "items.map(v => v + 1);" },
-      { display: "user?.name ?? \"guest\"", input: "user?.name ?? \"guest\"" },
-      { display: "for (const item of items) {}", input: "for (const item of items) {}" },
-      { display: "return value.trim();", input: "return value.trim();" },
-      { display: "type Key = string | number;", input: "type Key = string | number;" },
-      { display: "console.log({ score });", input: "console.log({ score });" },
-    ],
+    prompts: codePrompts,
   },
   symbols: {
     label: "記号",
-    prompts: [
-      { display: "- _ + = { } [ ]", input: "- _ + = { } [ ]" },
-      { display: "!?;:,. / \\ |", input: "!?;:,. / \\ |" },
-      { display: "A-Z 0-9", input: "A-Z 0-9" },
-      { display: "() => []", input: "() => []" },
-      { display: "< > \" ' ` ~", input: "< > \" ' ` ~" },
-      { display: "$ & * # @ % ^", input: "$ & * # @ % ^" },
-      { display: "== != <= >=", input: "== != <= >=" },
-      { display: "{ key: \"value\" }", input: "{ key: \"value\" }" },
-    ],
+    prompts: symbolPrompts,
   },
 } as const;
 
@@ -70,6 +195,30 @@ type GamePhase = "ready" | "countdown" | "playing" | "result";
 type VisualCue = { id: number; text: string; kind: "score" | "clear" | "miss" };
 
 const roundSeconds = 45;
+
+function playOscillator(
+  context: AudioContext,
+  output: AudioNode,
+  frequency: number,
+  type: OscillatorType,
+  start: number,
+  duration: number,
+  volume: number,
+  endFrequency = frequency,
+) {
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), start + duration);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  oscillator.connect(gain);
+  gain.connect(output);
+  oscillator.start(start);
+  oscillator.stop(start + duration + 0.02);
+}
 
 const kanaRomaji: Record<string, string[]> = {
   あ: ["a"], い: ["i"], う: ["u"], え: ["e"], お: ["o"],
@@ -297,7 +446,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setVisualCue({ id: Date.now(), text, kind });
   }
 
-  function playTone(kind: "tap" | "miss" | "clear") {
+  function playTone(kind: "tap" | "miss" | "clear", intensity = 0) {
     const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
     const AudioContextClass = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
     if (!AudioContextClass) {
@@ -306,34 +455,36 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
 
     const context = audioContextRef.current ?? new AudioContextClass();
     audioContextRef.current = context;
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+
     const now = context.currentTime;
-    const gain = context.createGain();
-    gain.connect(context.destination);
+    const master = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    master.connect(compressor);
+    compressor.connect(context.destination);
+    master.gain.setValueAtTime(0.32, now);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "clear" ? 0.62 : 0.24));
 
     if (kind === "clear") {
-      [523.25, 659.25, 783.99].forEach((frequency, index) => {
-        const oscillator = context.createOscillator();
-        oscillator.type = "sine";
-        oscillator.frequency.value = frequency;
-        oscillator.connect(gain);
-        oscillator.start(now + index * 0.045);
-        oscillator.stop(now + index * 0.045 + 0.12);
+      const lift = Math.min(intensity, 10) * 8;
+      [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+        playOscillator(context, master, frequency + lift, "sine", now + index * 0.042, 0.22, 0.12);
       });
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.11, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      playOscillator(context, master, 1568 + lift, "triangle", now + 0.05, 0.34, 0.05, 2093 + lift);
       return;
     }
 
-    const oscillator = context.createOscillator();
-    oscillator.type = kind === "tap" ? "triangle" : "sawtooth";
-    oscillator.frequency.value = kind === "tap" ? 880 : 180;
-    oscillator.connect(gain);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(kind === "tap" ? 0.055 : 0.08, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "tap" ? 0.07 : 0.16));
-    oscillator.start(now);
-    oscillator.stop(now + (kind === "tap" ? 0.08 : 0.18));
+    if (kind === "miss") {
+      playOscillator(context, master, 180, "sine", now, 0.18, 0.16, 92);
+      playOscillator(context, master, 92, "sawtooth", now + 0.01, 0.16, 0.035, 70);
+      return;
+    }
+
+    const comboLift = Math.min(intensity, 20) * 10;
+    playOscillator(context, master, 760 + comboLift, "triangle", now, 0.07, 0.11, 1120 + comboLift);
+    playOscillator(context, master, 1520 + comboLift, "sine", now + 0.006, 0.05, 0.045, 1860 + comboLift);
   }
 
   function advancePrompt(nextMode = mode) {
@@ -372,7 +523,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
       const points = 10 + Math.min(comboCount, 30);
       setScore((current) => current + points);
       showCue(`+${points}`, "score");
-      playTone("tap");
+      playTone("tap", comboCount);
     }
 
     if (nextState.complete) {
@@ -385,7 +536,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
       setScore((current) => current + 150 + comboCount * 10);
       setFeedback("clear");
       showCue("CLEAR!", "clear");
-      playTone("clear");
+      playTone("clear", comboCount + 1);
       onQueryChange([]);
       window.setTimeout(() => {
         setFeedback("idle");
