@@ -8,38 +8,183 @@ type TypingPracticeProps = {
   onPickCandidate: (candidate: PracticeCandidate) => void;
 };
 
+const jp = (display: string, kana: string) => ({ display, kana });
+const textPrompt = (input: string) => ({ display: input, input });
+
+const japanesePrompts = [
+  jp("こんにちは、Cornix。", "こんにちは、cornix。"),
+  jp("日本語入力も練習できます。", "にほんごにゅうりょくもれんしゅうできます。"),
+  jp("今日はキー配列を覚えます。", "きょうはきーはいれつをおぼえます。"),
+  jp("左右の親指をうまく使います。", "さゆうのおやゆびをうまくつかいます。"),
+  jp("記号の場所を少しずつ覚えます。", "きごうのばしょをすこしずつおぼえます。"),
+  jp("焦らず正確に入力します。", "あせらずせいかくににゅうりょくします。"),
+  jp("レイヤーキーを自然に押せるようにします。", "れいやーきーをしぜんにおせるようにします。"),
+  jp("短い文章からテンポを作ります。", "みじかいぶんしょうからてんぽをつくります。"),
+  jp("手元を見ずに打てると楽しいです。", "てもとをみずにうてるとたのしいです。"),
+  jp("小さなミスをすぐ直します。", "ちいさなみすをすぐなおします。"),
+  jp("親指の動きを軽くします。", "おやゆびのうごきをかるくします。"),
+  jp("次のキーを見つけてから押します。", "つぎのきーをみつけてからおします。"),
+  jp("慣れるまではゆっくりで大丈夫です。", "なれるまではゆっくりでだいじょうぶです。"),
+  jp("記号入力の苦手を減らします。", "きごうにゅうりょくのにがてをへらします。"),
+  jp("同じ文章でも速さが変わります。", "おなじぶんしょうでもはやさがかわります。"),
+  jp("ゲーム感覚で配列を覚えます。", "げーむかんかくではいれつをおぼえます。"),
+  jp("一文字ずつリズムを刻みます。", "いちもじずつりずむをきざみます。"),
+  jp("次のレイヤーにすばやく移ります。", "つぎのれいやーにすばやくうつります。"),
+  jp("速さよりも流れを大事にします。", "はやさよりもながれをだいじにします。"),
+  jp("打鍵音に合わせて進みます。", "だけんおんにあわせてすすみます。"),
+  jp("今日は少しだけ上達しました。", "きょうはすこしだけじょうたつしました。"),
+  jp("難しい記号も何度も練習します。", "むずかしいきごうもなんどもれんしゅうします。"),
+  jp("右手の下段をしっかり覚えます。", "みぎてのげだんをしっかりおぼえます。"),
+  jp("左手の親指キーを迷わず押します。", "ひだりてのおやゆびきーをまよわずおします。"),
+  jp("打ち終わったら次の文へ進みます。", "うちおわったらつぎのぶんへすすみます。"),
+  jp("気持ちよい連続入力を目指します。", "きもちよいれんぞくにゅうりょくをめざします。"),
+  jp("小指に頼りすぎない配列です。", "こゆびにたよりすぎないはいれつです。"),
+  jp("記憶と反射を少しずつつなげます。", "きおくとはんしゃをすこしずつつなげます。"),
+  jp("焦ったときほど姿勢を戻します。", "あせったときほどしせいをもどします。"),
+  jp("画面のヒントを見て場所を覚えます。", "がめんのひんとをみてばしょをおぼえます。"),
+  jp("毎日少しだけ練習を続けます。", "まいにちすこしだけれんしゅうをつづけます。"),
+  jp("反応が良いと続けたくなります。", "はんのうがよいとつづけたくなります。"),
+  jp("記号の連打にも慣れていきます。", "きごうのれんだにもなれていきます。"),
+  jp("新しい配列でも遊びながら覚えます。", "あたらしいはいれつでもあそびながらおぼえます。"),
+  jp("上下左右のキーも正しく使います。", "じょうげさゆうのきーもただしくつかいます。"),
+  jp("ミスを恐れずもう一度打ちます。", "みすをおそれずもういちどうちます。"),
+  jp("文字が進むと気分も乗ってきます。", "もじがすすむときぶんものってきます。"),
+  jp("指の移動距離を短くします。", "ゆびのいどうきょりをみじかくします。"),
+  jp("次の候補を見ながら覚えます。", "つぎのこうほをみながらおぼえます。"),
+  jp("最後まで集中して打ち切ります。", "さいごまでしゅうちゅうしてうちきります。"),
+];
+
+const englishBasePrompts = [
+  "Hello, Cornix!",
+  "Keep your rhythm.",
+  "Type fast and stay relaxed.",
+  "Small wins build speed.",
+  "Layer keys need practice.",
+  "Accuracy comes first.",
+  "Find the key, then flow.",
+  "One more clean streak!",
+  "Trust the next key.",
+  "Keep both thumbs ready.",
+  "Symbols are part of the game.",
+  "Smooth typing feels great.",
+];
+
+const englishSubjects = [
+  "Layer keys",
+  "Thumb keys",
+  "Clean streaks",
+  "Small symbols",
+  "Fast fingers",
+  "Good rhythm",
+  "Every mistake",
+  "The next prompt",
+  "Your keymap",
+  "Short practice",
+  "Quick feedback",
+  "Steady focus",
+];
+
+const englishActions = [
+  "build better memory",
+  "make the layout feel natural",
+  "turn practice into flow",
+  "keep the pace alive",
+  "teach the hands to move",
+  "reward careful typing",
+  "help the next run",
+  "make symbols less scary",
+];
+
+const englishPrompts = [
+  ...englishBasePrompts.map(textPrompt),
+  ...englishSubjects.flatMap((subject) => englishActions.map((action) => textPrompt(`${subject} ${action}.`))),
+];
+
+const codeBasePrompts = [
+  "const x = 42;",
+  "if (ok) return true;",
+  "items.map(v => v + 1);",
+  "user?.name ?? \"guest\"",
+  "for (const item of items) {}",
+  "return value.trim();",
+  "type Key = string | number;",
+  "console.log({ score });",
+  "const done = count > 0;",
+  "await save({ id, value });",
+  "array.filter(Boolean);",
+  "throw new Error(\"failed\");",
+];
+
+const codeNames = ["score", "combo", "layer", "keymap", "prompt", "timer", "result", "input", "cursor", "target"];
+const codeMethods = ["trim", "toLowerCase", "toUpperCase", "slice", "map", "filter", "join", "split", "reduce", "some", "every", "find"];
+const codePrompts = [
+  ...codeBasePrompts.map(textPrompt),
+  ...codeNames.flatMap((name) => [
+    textPrompt(`const ${name} = state.${name};`),
+    textPrompt(`set${name[0].toUpperCase()}${name.slice(1)}(${name} + 1);`),
+    textPrompt(`if (!${name}) return null;`),
+    textPrompt(`data.${name}?.value ?? 0`),
+  ]),
+  ...codeMethods.flatMap((method) => [
+    textPrompt(`value.${method}();`),
+    textPrompt(`items.${method}(item => item.id);`),
+  ]),
+];
+
+const symbolBasePrompts = [
+  "- _ + = { } [ ]",
+  "!?;:,. / \\ |",
+  "A-Z 0-9",
+  "() => []",
+  "< > \" ' ` ~",
+  "$ & * # @ % ^",
+  "== != <= >=",
+  "{ key: \"value\" }",
+  "foo_bar-baz",
+  "path/to/file.ts",
+  "name: value;",
+  "[1, 2, 3]",
+];
+
+const symbolGroups = [
+  ["-", "_", "+", "="],
+  ["{", "}", "[", "]"],
+  ["(", ")", "<", ">"],
+  ["!", "?", ";", ":"],
+  ["\"", "'", "`", "~"],
+  ["$", "&", "*", "#"],
+  ["/", "\\", "|", "."],
+  ["==", "!=", "<=", ">="],
+];
+
+const symbolPrompts = [
+  ...symbolBasePrompts.map(textPrompt),
+  ...symbolGroups.flatMap((group) => [
+    textPrompt(group.join(" ")),
+    textPrompt(group.join("")),
+    textPrompt(`${group[0]} ${group[1]} ${group[2]} ${group[3]} ${group[2]} ${group[1]} ${group[0]}`),
+  ]),
+  ...symbolGroups.flatMap((left) =>
+    symbolGroups.map((right) => textPrompt(`${left[0]}${right[1]} ${left[1]}${right[2]} ${left[2]}${right[3]}`)),
+  ),
+];
+
 const promptSets = {
   japanese: {
     label: "日本語",
-    prompts: [
-      { display: "こんにちは、Cornix。", kana: "こんにちは、cornix。" },
-      { display: "日本語入力も練習できます。", kana: "にほんごにゅうりょくもれんしゅうできます。" },
-      { display: "今日はキー配列を覚えます。", kana: "きょうはきーはいれつをおぼえます。" },
-    ],
+    prompts: japanesePrompts,
   },
   english: {
     label: "英語",
-    prompts: [
-      { display: "Hello, Cornix!", input: "Hello, Cornix!" },
-      { display: "Keep your rhythm.", input: "Keep your rhythm." },
-      { display: "Type fast and stay relaxed.", input: "Type fast and stay relaxed." },
-    ],
+    prompts: englishPrompts,
   },
   code: {
     label: "コード",
-    prompts: [
-      { display: "const x = 42;", input: "const x = 42;" },
-      { display: "if (ok) return true;", input: "if (ok) return true;" },
-      { display: "items.map(v => v + 1);", input: "items.map(v => v + 1);" },
-    ],
+    prompts: codePrompts,
   },
   symbols: {
     label: "記号",
-    prompts: [
-      { display: "- _ + = { } [ ]", input: "- _ + = { } [ ]" },
-      { display: "!?;:,. / \\ |", input: "!?;:,. / \\ |" },
-      { display: "A-Z 0-9", input: "A-Z 0-9" },
-    ],
+    prompts: symbolPrompts,
   },
 } as const;
 
@@ -47,8 +192,46 @@ type PromptMode = keyof typeof promptSets;
 type Feedback = "idle" | "clear" | "miss";
 type Prompt = (typeof promptSets)[PromptMode]["prompts"][number];
 type GamePhase = "ready" | "countdown" | "playing" | "result";
+type SessionMode = "timed" | "endless";
+type VisualCue = { id: number; text: string; kind: "score" | "clear" | "miss" };
 
 const roundSeconds = 45;
+
+function randomPromptIndex(length: number, avoidIndex = -1) {
+  if (length <= 1) {
+    return 0;
+  }
+
+  let nextIndex = Math.floor(Math.random() * length);
+  while (nextIndex === avoidIndex) {
+    nextIndex = Math.floor(Math.random() * length);
+  }
+  return nextIndex;
+}
+
+function playOscillator(
+  context: AudioContext,
+  output: AudioNode,
+  frequency: number,
+  type: OscillatorType,
+  start: number,
+  duration: number,
+  volume: number,
+  endFrequency = frequency,
+) {
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, start);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, endFrequency), start + duration);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  oscillator.connect(gain);
+  gain.connect(output);
+  oscillator.start(start);
+  oscillator.stop(start + duration + 0.02);
+}
 
 const kanaRomaji: Record<string, string[]> = {
   あ: ["a"], い: ["i"], う: ["u"], え: ["e"], お: ["o"],
@@ -165,8 +348,12 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
   const [completedCount, setCompletedCount] = useState(0);
   const [mistakeCount, setMistakeCount] = useState(0);
   const [comboCount, setComboCount] = useState(0);
+  const [maxComboCount, setMaxComboCount] = useState(0);
+  const [score, setScore] = useState(0);
+  const [visualCue, setVisualCue] = useState<VisualCue | null>(null);
   const [feedback, setFeedback] = useState<Feedback>("idle");
   const [phase, setPhase] = useState<GamePhase>("ready");
+  const [sessionMode, setSessionMode] = useState<SessionMode>("timed");
   const [countdown, setCountdown] = useState(3);
   const [remainingSeconds, setRemainingSeconds] = useState(roundSeconds);
   const prompts = promptSets[mode].prompts;
@@ -180,6 +367,8 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     [data, typingState.nextCharacters],
   );
   const progress = inputText.length === 0 ? 0 : Math.round((typedText.length / inputText.length) * 100);
+  const timeProgress = Math.max(0, Math.min(100, Math.round((remainingSeconds / roundSeconds) * 100)));
+  const isTimedSession = sessionMode === "timed";
   const nextGuide = nextCharacter
     ? nextCandidates[0]
       ? `次: ${typingState.nextCharacters.join(" / ")} / 押す: ${nextCandidates[0].press}`
@@ -187,10 +376,10 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     : "クリア！";
 
   useEffect(() => {
-    if (typedText.length === 0 && nextCharacter) {
+    if (phase === "playing" && typedText.length === 0 && nextCharacter) {
       activateCharacters(typingState.nextCharacters);
     }
-  }, [mode, promptIndex]);
+  }, [mode, phase, promptIndex]);
 
   useEffect(() => {
     if (phase !== "countdown") {
@@ -208,7 +397,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
   }, [countdown, phase, typingState.nextCharacters]);
 
   useEffect(() => {
-    if (phase !== "playing") {
+    if (phase !== "playing" || !isTimedSession) {
       return undefined;
     }
 
@@ -220,7 +409,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
 
     const timer = window.setTimeout(() => setRemainingSeconds((value) => value - 1), 1000);
     return () => window.clearTimeout(timer);
-  }, [onQueryChange, phase, remainingSeconds]);
+  }, [isTimedSession, onQueryChange, phase, remainingSeconds]);
 
   useEffect(() => {
     if (phase !== "playing") {
@@ -250,6 +439,15 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [phase, promptInputs, typedText]);
 
+  useEffect(() => {
+    if (!visualCue) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setVisualCue(null), 900);
+    return () => window.clearTimeout(timer);
+  }, [visualCue]);
+
   function activateCharacters(nextCharacters: string[]) {
     onQueryChange(nextCharacters);
 
@@ -259,54 +457,101 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     }
   }
 
-  function playTone(kind: "tap" | "miss" | "clear") {
+  function showCue(text: string, kind: VisualCue["kind"]) {
+    setVisualCue({ id: Date.now(), text, kind });
+  }
+
+  function getAudioContext() {
     const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
     const AudioContextClass = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
     if (!AudioContextClass) {
-      return;
+      return undefined;
     }
 
     const context = audioContextRef.current ?? new AudioContextClass();
     audioContextRef.current = context;
-    const now = context.currentTime;
-    const gain = context.createGain();
-    gain.connect(context.destination);
+    return context;
+  }
 
-    if (kind === "clear") {
-      [523.25, 659.25, 783.99].forEach((frequency, index) => {
-        const oscillator = context.createOscillator();
-        oscillator.type = "sine";
-        oscillator.frequency.value = frequency;
-        oscillator.connect(gain);
-        oscillator.start(now + index * 0.045);
-        oscillator.stop(now + index * 0.045 + 0.12);
-      });
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.11, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+  function unlockAudio() {
+    const context = getAudioContext();
+    if (!context) {
       return;
     }
 
+    if (context.state === "suspended") {
+      void context.resume();
+    }
+
+    const now = context.currentTime;
+    const gain = context.createGain();
     const oscillator = context.createOscillator();
-    oscillator.type = kind === "tap" ? "triangle" : "sawtooth";
-    oscillator.frequency.value = kind === "tap" ? 880 : 180;
-    oscillator.connect(gain);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(kind === "tap" ? 0.055 : 0.08, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "tap" ? 0.07 : 0.16));
+    oscillator.frequency.setValueAtTime(880, now);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
     oscillator.start(now);
-    oscillator.stop(now + (kind === "tap" ? 0.08 : 0.18));
+    oscillator.stop(now + 0.012);
   }
 
-  function advancePrompt(nextMode = mode) {
+  function playTone(kind: "tap" | "miss" | "clear" | "start", intensity = 0) {
+    const context = getAudioContext();
+    if (!context) {
+      return;
+    }
+
+    if (context.state === "suspended") {
+      void context.resume().then(() => playTone(kind, intensity));
+      return;
+    }
+
+    const now = context.currentTime;
+    const master = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    master.connect(compressor);
+    compressor.connect(context.destination);
+    master.gain.setValueAtTime(kind === "start" ? 0.14 : 0.32, now);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "clear" ? 0.62 : kind === "start" ? 0.18 : 0.24));
+
+    if (kind === "start") {
+      playOscillator(context, master, 440, "sine", now, 0.08, 0.08, 660);
+      playOscillator(context, master, 880, "triangle", now + 0.05, 0.1, 0.045, 1320);
+      return;
+    }
+
+    if (kind === "clear") {
+      const lift = Math.min(intensity, 10) * 8;
+      [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+        playOscillator(context, master, frequency + lift, "sine", now + index * 0.042, 0.22, 0.12);
+      });
+      playOscillator(context, master, 1568 + lift, "triangle", now + 0.05, 0.34, 0.05, 2093 + lift);
+      return;
+    }
+
+    if (kind === "miss") {
+      playOscillator(context, master, 180, "sine", now, 0.18, 0.16, 92);
+      playOscillator(context, master, 92, "sawtooth", now + 0.01, 0.16, 0.035, 70);
+      return;
+    }
+
+    const comboLift = Math.min(intensity, 20) * 10;
+    playOscillator(context, master, 760 + comboLift, "triangle", now, 0.07, 0.11, 1120 + comboLift);
+    playOscillator(context, master, 1520 + comboLift, "sine", now + 0.006, 0.05, 0.045, 1860 + comboLift);
+  }
+
+  function advancePrompt(nextMode = mode, activate = phase === "playing") {
     const nextPrompts = promptSets[nextMode].prompts;
-    const nextIndex = nextMode === mode ? (promptIndex + 1) % nextPrompts.length : 0;
+    const nextIndex = randomPromptIndex(nextPrompts.length, nextMode === mode ? promptIndex : -1);
     const nextInputs = getPromptInputs(nextPrompts[nextIndex]);
     const nextState = getTypingState(nextInputs, "");
 
     setPromptIndex(nextIndex);
     setTypedText("");
-    activateCharacters(nextState.nextCharacters);
+    if (activate) {
+      activateCharacters(nextState.nextCharacters);
+    } else {
+      onQueryChange([]);
+    }
   }
 
   function updateTypedText(value: string) {
@@ -322,6 +567,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
       setMistakeCount((count) => count + 1);
       setComboCount(0);
       setFeedback("miss");
+      showCue("MISS", "miss");
       playTone("miss");
       window.setTimeout(() => setFeedback("idle"), 180);
       return;
@@ -330,14 +576,23 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setTypedText(nextTyped);
     setFeedback("idle");
     if (nextTyped.length > typedText.length) {
-      playTone("tap");
+      const points = 10 + Math.min(comboCount, 30);
+      setScore((current) => current + points);
+      showCue(`+${points}`, "score");
+      playTone("tap", comboCount);
     }
 
     if (nextState.complete) {
       setCompletedCount((count) => count + 1);
-      setComboCount((count) => count + 1);
+      setComboCount((count) => {
+        const nextCombo = count + 1;
+        setMaxComboCount((maxCombo) => Math.max(maxCombo, nextCombo));
+        return nextCombo;
+      });
+      setScore((current) => current + 150 + comboCount * 10);
       setFeedback("clear");
-      playTone("clear");
+      showCue("CLEAR!", "clear");
+      playTone("clear", comboCount + 1);
       onQueryChange([]);
       window.setTimeout(() => {
         setFeedback("idle");
@@ -353,22 +608,52 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setCompletedCount(0);
     setMistakeCount(0);
     setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
     setFeedback("idle");
     setPhase("ready");
     setRemainingSeconds(roundSeconds);
-    advancePrompt(nextMode);
+    advancePrompt(nextMode, false);
   }
 
-  function startGame() {
+  function changeSessionMode(nextSessionMode: SessionMode) {
+    setSessionMode(nextSessionMode);
     setTypedText("");
     setCompletedCount(0);
     setMistakeCount(0);
     setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
+    setFeedback("idle");
+    setPhase("ready");
+    setCountdown(3);
+    setRemainingSeconds(roundSeconds);
+    onQueryChange([]);
+  }
+
+  function startGame() {
+    const nextIndex = randomPromptIndex(prompts.length, promptIndex);
+    const nextInputs = getPromptInputs(prompts[nextIndex]);
+    const nextState = getTypingState(nextInputs, "");
+
+    setPromptIndex(nextIndex);
+    setTypedText("");
+    setCompletedCount(0);
+    setMistakeCount(0);
+    setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
     setFeedback("idle");
     setCountdown(3);
     setRemainingSeconds(roundSeconds);
     setPhase("countdown");
     onQueryChange([]);
+    activateCharacters(nextState.nextCharacters);
+    unlockAudio();
+    playTone("start");
   }
 
   function resetGame() {
@@ -376,10 +661,13 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setCompletedCount(0);
     setMistakeCount(0);
     setComboCount(0);
+    setMaxComboCount(0);
+    setScore(0);
+    setVisualCue(null);
     setFeedback("idle");
     setPhase("ready");
     setRemainingSeconds(roundSeconds);
-    activateCharacters(getTypingState(promptInputs, "").nextCharacters);
+    onQueryChange([]);
   }
 
   const inputCharacters = Array.from(inputText);
@@ -391,27 +679,53 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
         <div className="game-body">
           <div className="game-topline">
             <div className="game-label">タイピングゲーム</div>
-            <div className="mode-tabs" aria-label="練習モード">
-              {(Object.entries(promptSets) as Array<[PromptMode, (typeof promptSets)[PromptMode]]>).map(
-                ([modeKey, modeInfo]) => (
-                  <button
-                    key={modeKey}
-                    type="button"
-                    className={modeKey === mode ? "mode-tab active" : "mode-tab"}
-                    onClick={() => changeMode(modeKey)}
-                  >
-                    {modeInfo.label}
-                  </button>
-                ),
-              )}
+            <div className="game-controls">
+              <div className="mode-tabs" aria-label="練習モード">
+                {(Object.entries(promptSets) as Array<[PromptMode, (typeof promptSets)[PromptMode]]>).map(
+                  ([modeKey, modeInfo]) => (
+                    <button
+                      key={modeKey}
+                      type="button"
+                      className={modeKey === mode ? "mode-tab active" : "mode-tab"}
+                      onClick={() => changeMode(modeKey)}
+                    >
+                      {modeInfo.label}
+                    </button>
+                  ),
+                )}
+              </div>
+              <div className="mode-tabs session-tabs" aria-label="時間モード">
+                <button
+                  type="button"
+                  className={sessionMode === "timed" ? "mode-tab active" : "mode-tab"}
+                  onClick={() => changeSessionMode("timed")}
+                >
+                  45秒
+                </button>
+                <button
+                  type="button"
+                  className={sessionMode === "endless" ? "mode-tab active" : "mode-tab"}
+                  onClick={() => changeSessionMode("endless")}
+                >
+                  無限
+                </button>
+              </div>
             </div>
           </div>
           <div className="game-hud">
-            <div className="hud-main">{phase === "playing" ? `${remainingSeconds}s` : "45s"}</div>
+            <div className="hud-main">
+              {isTimedSession ? (phase === "playing" ? `${remainingSeconds}s` : `${roundSeconds}s`) : "∞"}
+            </div>
+            <div className="score-pill">スコア {score}</div>
             <div>クリア {completedCount}</div>
             <div>ミス {mistakeCount}</div>
             <div>コンボ {comboCount}</div>
           </div>
+          {visualCue ? (
+            <div key={visualCue.id} className={`visual-cue ${visualCue.kind}`}>
+              {visualCue.text}
+            </div>
+          ) : null}
           {phase === "ready" ? (
             <div className="game-overlay">
               <button type="button" className="start-button" onClick={startGame}>
@@ -419,16 +733,35 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
               </button>
             </div>
           ) : null}
-          {phase === "countdown" ? <div className="countdown-display">{countdown || "GO"}</div> : null}
+          {phase === "countdown" ? (
+            <div key={countdown} className={countdown ? "countdown-display" : "countdown-display go"}>
+              <span>{countdown || "GO"}</span>
+            </div>
+          ) : null}
           {phase === "result" ? (
             <div className="game-overlay result-panel">
               <div className="result-title">結果</div>
-              <div className="result-score">クリア {completedCount} / ミス {mistakeCount}</div>
+              <div className="result-score">スコア {score}</div>
+              <div className="result-score">クリア {completedCount} / ミス {mistakeCount} / 最大コンボ {maxComboCount}</div>
               <button type="button" className="start-button" onClick={startGame}>
                 もう一度
               </button>
             </div>
           ) : null}
+          <div
+            className={
+              !isTimedSession
+                ? "time-meter endless"
+                : remainingSeconds <= 10 && phase === "playing"
+                  ? "time-meter danger"
+                  : "time-meter"
+            }
+          >
+            <div style={{ width: `${isTimedSession ? timeProgress : 100}%` }} />
+          </div>
+          <div className={comboCount >= 3 && phase === "playing" ? "combo-badge" : "combo-badge empty"}>
+            {Math.max(comboCount, 3)} COMBO
+          </div>
           <div className="sentence" aria-label="出題文">{prompt.display}</div>
           <div className="typing-track" aria-label="入力進捗">
             {inputCharacters.map((promptCharacter, index) => (
@@ -442,7 +775,7 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
               </span>
             ))}
           </div>
-          {phase === "playing" ? <div className="game-status">{nextGuide}</div> : null}
+          <div className={phase === "playing" ? "game-status" : "game-status idle"}>{phase === "playing" ? nextGuide : "\u00a0"}</div>
           <div className="combo-meter">
             <div style={{ width: `${progress}%` }} />
           </div>

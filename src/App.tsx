@@ -6,6 +6,7 @@ import { TypingPractice } from "./components/TypingPractice";
 import { parseDroppedKeymap, validateKeymap } from "./keymapParser";
 import { findPracticeCandidates, type PracticeCandidate } from "./practiceSearch";
 import type { KeymapData } from "./types";
+import type { KeyHighlightKind } from "./components/Keycap";
 import { readKeymapFromCurrentUrl, writeKeymapToUrl } from "./urlKeymap";
 import "./styles.css";
 
@@ -24,6 +25,38 @@ function getInitialLayerIndex(maxLayer: number) {
   return Math.min(Math.max(parsed, 0), Math.max(maxLayer - 1, 0));
 }
 
+function getHoldLayerIndex(rawKeycode: string) {
+  const raw = rawKeycode.trim();
+  const mo = raw.match(/^MO\((\d+)\)$/);
+  if (mo) {
+    return Number(mo[1]);
+  }
+
+  const lt = raw.match(/^LT\((\d+),\s*.+\)$/);
+  if (lt) {
+    return Number(lt[1]);
+  }
+
+  const lm = raw.match(/^LM\((\d+),\s*.+\)$/);
+  if (lm) {
+    return Number(lm[1]);
+  }
+
+  return undefined;
+}
+
+function isShiftKey(rawKeycode: string) {
+  const raw = rawKeycode.trim();
+  return (
+    raw === "KC_LSFT" ||
+    raw === "KC_LSHIFT" ||
+    raw === "KC_RSFT" ||
+    raw === "KC_RSHIFT" ||
+    /^MT\(\s*(?:MOD_)?[LR]SFT\s*,/.test(raw) ||
+    /^MT\(\s*KC_[LR]S(?:FT|HIFT)\s*,/.test(raw)
+  );
+}
+
 export default function App() {
   const [data, setData] = useState<KeymapData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +66,25 @@ export default function App() {
   const [shareStatus, setShareStatus] = useState<string | undefined>();
   const [shareUrl, setShareUrl] = useState<string | undefined>();
   const [practiceCharacters, setPracticeCharacters] = useState<string[]>([]);
+  const [practiceDisplayLayerIndex, setPracticeDisplayLayerIndex] = useState<number | undefined>();
+  const displayLayerIndex = practiceDisplayLayerIndex ?? activeLayerIndex;
+
+  const layerAccessKeyOverrides = useMemo(() => {
+    if (!data || practiceDisplayLayerIndex === undefined || practiceDisplayLayerIndex === 0) {
+      return undefined;
+    }
+
+    const baseLayer = data.layers[0];
+    const overrides = new Map<string, string>();
+    for (const key of data.layout.keys) {
+      const raw = baseLayer.keys[key.id] ?? "KC_NO";
+      if (getHoldLayerIndex(raw) === practiceDisplayLayerIndex) {
+        overrides.set(key.id, raw);
+      }
+    }
+
+    return overrides.size > 0 ? overrides : undefined;
+  }, [data, practiceDisplayLayerIndex]);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,18 +124,75 @@ export default function App() {
     window.localStorage.setItem(storageKey, String(activeLayerIndex));
   }, [activeLayerIndex]);
 
-  const highlightedKeyIds = useMemo(() => {
+  const highlightedKeys = useMemo(() => {
     if (!data || practiceCharacters.length === 0) {
       return undefined;
     }
 
-    const keyIds = practiceCharacters
-      .flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))
-      .filter((candidate) => candidate.layerIndex === activeLayerIndex)
-      .map((candidate) => candidate.keyId);
+    const candidates = practiceCharacters.flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter));
+    const highlights = new Map<string, KeyHighlightKind>();
 
-    return new Set(keyIds);
-  }, [activeLayerIndex, data, practiceCharacters]);
+    for (const candidate of candidates) {
+      if (candidate.layerIndex === displayLayerIndex) {
+        highlights.set(candidate.keyId, "target");
+      }
+    }
+
+    if (layerAccessKeyOverrides) {
+      for (const keyId of layerAccessKeyOverrides.keys()) {
+        if (!highlights.has(keyId)) {
+          highlights.set(keyId, "layer-access");
+        }
+      }
+    }
+
+    if (candidates.some((candidate) => candidate.shifted)) {
+      const baseLayer = data.layers[0];
+      for (const key of data.layout.keys) {
+        const raw = baseLayer.keys[key.id] ?? "KC_NO";
+        if (isShiftKey(raw) && !highlights.has(key.id)) {
+          highlights.set(key.id, "modifier");
+        }
+      }
+    }
+
+    return highlights;
+  }, [data, displayLayerIndex, layerAccessKeyOverrides, practiceCharacters]);
+
+  const keyRawOverrides = useMemo(() => {
+    if (!data) {
+      return layerAccessKeyOverrides;
+    }
+
+    const overrides = new Map(layerAccessKeyOverrides);
+    const needsShift = practiceCharacters
+      .flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))
+      .some((candidate) => candidate.shifted);
+
+    if (needsShift) {
+      const baseLayer = data.layers[0];
+      for (const key of data.layout.keys) {
+        const raw = baseLayer.keys[key.id] ?? "KC_NO";
+        if (isShiftKey(raw) && !overrides.has(key.id)) {
+          overrides.set(key.id, raw);
+        }
+      }
+    }
+
+    return overrides.size > 0 ? overrides : undefined;
+  }, [data, layerAccessKeyOverrides, practiceCharacters]);
+
+  function updatePracticeCharacters(characters: string[]) {
+    setPracticeCharacters(characters);
+
+    if (!data || characters.length === 0) {
+      setPracticeDisplayLayerIndex(undefined);
+      return;
+    }
+
+    const firstCandidate = characters.flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))[0];
+    setPracticeDisplayLayerIndex(firstCandidate?.layerIndex);
+  }
 
   function applyDroppedFile(text: string, fileName: string) {
     if (!data) {
@@ -95,6 +204,7 @@ export default function App() {
       setData(dropped);
       setError(null);
       setActiveLayerIndex(0);
+      setPracticeDisplayLayerIndex(undefined);
       setFileStatus(`${fileName} を読み込みました (${dropped.layers.length} レイヤー)`);
       setShareStatus(undefined);
       setShareUrl(undefined);
@@ -124,7 +234,7 @@ export default function App() {
 
   function pickPracticeCandidate(candidate: PracticeCandidate) {
     setPracticeCharacters([candidate.character]);
-    setActiveLayerIndex(candidate.layerIndex);
+    setPracticeDisplayLayerIndex(candidate.layerIndex);
   }
 
   if (error) {
@@ -183,16 +293,24 @@ export default function App() {
         </div>
       ) : null}
 
-      <LayerTabs layers={data.layers} activeIndex={activeLayerIndex} onChange={setActiveLayerIndex} />
+      <LayerTabs
+        layers={data.layers}
+        activeIndex={displayLayerIndex}
+        onChange={(nextLayerIndex) => {
+          setActiveLayerIndex(nextLayerIndex);
+          setPracticeDisplayLayerIndex(undefined);
+        }}
+      />
 
       <FileDropZone onFileText={applyDroppedFile} status={fileStatus} />
 
-      <TypingPractice data={data} onQueryChange={setPracticeCharacters} onPickCandidate={pickPracticeCandidate} />
+      <TypingPractice data={data} onQueryChange={updatePracticeCharacters} onPickCandidate={pickPracticeCandidate} />
 
       <KeyboardView
         data={data}
-        layerIndex={activeLayerIndex}
-        highlightedKeyIds={highlightedKeyIds}
+        layerIndex={displayLayerIndex}
+        highlightedKeys={highlightedKeys}
+        rawOverrides={keyRawOverrides}
         showBaseForTransparent={showBaseForTransparent}
       />
     </main>
