@@ -6,6 +6,7 @@ import { TypingPractice } from "./components/TypingPractice";
 import { parseDroppedKeymap, validateKeymap } from "./keymapParser";
 import { findPracticeCandidates, type PracticeCandidate } from "./practiceSearch";
 import type { KeymapData } from "./types";
+import type { KeyHighlightKind } from "./components/Keycap";
 import { readKeymapFromCurrentUrl, writeKeymapToUrl } from "./urlKeymap";
 import "./styles.css";
 
@@ -42,6 +43,18 @@ function getHoldLayerIndex(rawKeycode: string) {
   }
 
   return undefined;
+}
+
+function isShiftKey(rawKeycode: string) {
+  const raw = rawKeycode.trim();
+  return (
+    raw === "KC_LSFT" ||
+    raw === "KC_LSHIFT" ||
+    raw === "KC_RSFT" ||
+    raw === "KC_RSHIFT" ||
+    /^MT\(\s*(?:MOD_)?[LR]SFT\s*,/.test(raw) ||
+    /^MT\(\s*KC_[LR]S(?:FT|HIFT)\s*,/.test(raw)
+  );
 }
 
 export default function App() {
@@ -111,22 +124,63 @@ export default function App() {
     window.localStorage.setItem(storageKey, String(activeLayerIndex));
   }, [activeLayerIndex]);
 
-  const highlightedKeyIds = useMemo(() => {
+  const highlightedKeys = useMemo(() => {
     if (!data || practiceCharacters.length === 0) {
       return undefined;
     }
 
-    const keyIds = practiceCharacters
-      .flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))
-      .filter((candidate) => candidate.layerIndex === displayLayerIndex)
-      .map((candidate) => candidate.keyId);
+    const candidates = practiceCharacters.flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter));
+    const highlights = new Map<string, KeyHighlightKind>();
 
-    if (layerAccessKeyOverrides) {
-      keyIds.push(...layerAccessKeyOverrides.keys());
+    for (const candidate of candidates) {
+      if (candidate.layerIndex === displayLayerIndex) {
+        highlights.set(candidate.keyId, "target");
+      }
     }
 
-    return new Set(keyIds);
+    if (layerAccessKeyOverrides) {
+      for (const keyId of layerAccessKeyOverrides.keys()) {
+        if (!highlights.has(keyId)) {
+          highlights.set(keyId, "layer-access");
+        }
+      }
+    }
+
+    if (candidates.some((candidate) => candidate.shifted)) {
+      const baseLayer = data.layers[0];
+      for (const key of data.layout.keys) {
+        const raw = baseLayer.keys[key.id] ?? "KC_NO";
+        if (isShiftKey(raw) && !highlights.has(key.id)) {
+          highlights.set(key.id, "modifier");
+        }
+      }
+    }
+
+    return highlights;
   }, [data, displayLayerIndex, layerAccessKeyOverrides, practiceCharacters]);
+
+  const keyRawOverrides = useMemo(() => {
+    if (!data) {
+      return layerAccessKeyOverrides;
+    }
+
+    const overrides = new Map(layerAccessKeyOverrides);
+    const needsShift = practiceCharacters
+      .flatMap((practiceCharacter) => findPracticeCandidates(data, practiceCharacter))
+      .some((candidate) => candidate.shifted);
+
+    if (needsShift) {
+      const baseLayer = data.layers[0];
+      for (const key of data.layout.keys) {
+        const raw = baseLayer.keys[key.id] ?? "KC_NO";
+        if (isShiftKey(raw) && !overrides.has(key.id)) {
+          overrides.set(key.id, raw);
+        }
+      }
+    }
+
+    return overrides.size > 0 ? overrides : undefined;
+  }, [data, layerAccessKeyOverrides, practiceCharacters]);
 
   function updatePracticeCharacters(characters: string[]) {
     setPracticeCharacters(characters);
@@ -255,8 +309,8 @@ export default function App() {
       <KeyboardView
         data={data}
         layerIndex={displayLayerIndex}
-        highlightedKeyIds={highlightedKeyIds}
-        rawOverrides={layerAccessKeyOverrides}
+        highlightedKeys={highlightedKeys}
+        rawOverrides={keyRawOverrides}
         showBaseForTransparent={showBaseForTransparent}
       />
     </main>

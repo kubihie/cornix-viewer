@@ -1,11 +1,11 @@
 import type { KeyGeometry, KeymapData } from "../types";
 import { EncoderKnob } from "./EncoderKnob";
-import { Keycap } from "./Keycap";
+import { Keycap, type KeyHighlightKind } from "./Keycap";
 
 type KeyboardViewProps = {
   data: KeymapData;
   layerIndex: number;
-  highlightedKeyIds?: ReadonlySet<string>;
+  highlightedKeys?: ReadonlyMap<string, KeyHighlightKind>;
   rawOverrides?: ReadonlyMap<string, string>;
   showBaseForTransparent: boolean;
 };
@@ -93,7 +93,7 @@ function KeyboardItem({
   pixelGeometry,
   data,
   layerIndex,
-  highlightedKeyIds,
+  highlightedKeys,
   rawOverrides,
   showBaseForTransparent,
 }: {
@@ -101,7 +101,7 @@ function KeyboardItem({
   pixelGeometry: PixelGeometry;
   data: KeymapData;
   layerIndex: number;
-  highlightedKeyIds?: ReadonlySet<string>;
+  highlightedKeys?: ReadonlyMap<string, KeyHighlightKind>;
   rawOverrides?: ReadonlyMap<string, string>;
   showBaseForTransparent: boolean;
 }) {
@@ -125,7 +125,7 @@ function KeyboardItem({
       id={keyGeometry.id}
       raw={raw}
       baseRaw={baseLayer.keys[keyGeometry.id]}
-      highlighted={highlightedKeyIds?.has(keyGeometry.id) ?? false}
+      highlightKind={highlightedKeys?.get(keyGeometry.id)}
       showBaseForTransparent={showBaseForTransparent}
       rotation={keyGeometry.r}
       {...pixelGeometry}
@@ -137,14 +137,14 @@ function CombinedKeyboardSvg({
   keys,
   data,
   layerIndex,
-  highlightedKeyIds,
+  highlightedKeys,
   rawOverrides,
   showBaseForTransparent,
 }: {
   keys: KeyGeometry[];
   data: KeymapData;
   layerIndex: number;
-  highlightedKeyIds?: ReadonlySet<string>;
+  highlightedKeys?: ReadonlyMap<string, KeyHighlightKind>;
   rawOverrides?: ReadonlyMap<string, string>;
   showBaseForTransparent: boolean;
 }) {
@@ -172,7 +172,7 @@ function CombinedKeyboardSvg({
               pixelGeometry={geometry}
               data={data}
               layerIndex={layerIndex}
-              highlightedKeyIds={highlightedKeyIds}
+              highlightedKeys={highlightedKeys}
               rawOverrides={rawOverrides}
               showBaseForTransparent={showBaseForTransparent}
             />
@@ -186,7 +186,7 @@ function CombinedKeyboardSvg({
 export function KeyboardView({
   data,
   layerIndex,
-  highlightedKeyIds,
+  highlightedKeys,
   rawOverrides,
   showBaseForTransparent,
 }: KeyboardViewProps) {
@@ -197,7 +197,7 @@ export function KeyboardView({
           keys={data.layout.keys}
           data={data}
           layerIndex={layerIndex}
-          highlightedKeyIds={highlightedKeyIds}
+          highlightedKeys={highlightedKeys}
           rawOverrides={rawOverrides}
           showBaseForTransparent={showBaseForTransparent}
         />

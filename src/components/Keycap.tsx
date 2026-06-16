@@ -1,5 +1,7 @@
 import { getKeycodePresentation, type KeycodePresentation } from "../keycodeLabels";
 
+export type KeyHighlightKind = "target" | "layer-access" | "modifier";
+
 type KeycapProps = {
   id: string;
   raw: string;
@@ -10,7 +12,7 @@ type KeycapProps = {
   rotation?: number;
   originX?: number;
   originY?: number;
-  highlighted: boolean;
+  highlightKind?: KeyHighlightKind;
   baseRaw?: string;
   showBaseForTransparent: boolean;
 };
@@ -51,7 +53,7 @@ export function Keycap({
   rotation = 0,
   originX,
   originY,
-  highlighted,
+  highlightKind,
   baseRaw,
   showBaseForTransparent,
 }: KeycapProps) {
@@ -65,7 +67,8 @@ export function Keycap({
   const fontSize = Math.max(8.5, Math.min(14, longest > 10 ? 10 : longest > 7 ? 11.5 : 13));
   const className = [
     "keycap",
-    highlighted ? "highlighted" : "",
+    highlightKind ? "highlighted" : "",
+    highlightKind ? `highlight-${highlightKind}` : "",
     presentation.kind === "transparent" ? "transparent" : "",
     presentation.kind === "empty" ? "empty" : "",
     presentation.kind === "layer" ? "layer" : "",

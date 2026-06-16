@@ -847,6 +847,29 @@ input {
   stroke-width: 3;
 }
 
+.keycap.highlight-layer-access rect {
+  fill: #e8f8f1;
+  stroke: #16845f;
+  stroke-width: 3;
+  stroke-dasharray: 6 3;
+}
+
+.keycap.highlight-layer-access .key-label {
+  fill: #0f5c43;
+  font-weight: 900;
+}
+
+.keycap.highlight-modifier rect {
+  fill: #f2eafe;
+  stroke: #7c3aed;
+  stroke-width: 3;
+}
+
+.keycap.highlight-modifier .key-label {
+  fill: #5824b8;
+  font-weight: 900;
+}
+
 .keycap:focus-visible rect {
   stroke: #18776d;
   stroke-width: 2.5;
