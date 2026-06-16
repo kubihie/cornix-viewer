@@ -461,17 +461,48 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setVisualCue({ id: Date.now(), text, kind });
   }
 
-  function playTone(kind: "tap" | "miss" | "clear", intensity = 0) {
+  function getAudioContext() {
     const audioWindow = window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext };
     const AudioContextClass = audioWindow.AudioContext ?? audioWindow.webkitAudioContext;
     if (!AudioContextClass) {
-      return;
+      return undefined;
     }
 
     const context = audioContextRef.current ?? new AudioContextClass();
     audioContextRef.current = context;
+    return context;
+  }
+
+  function unlockAudio() {
+    const context = getAudioContext();
+    if (!context) {
+      return;
+    }
+
     if (context.state === "suspended") {
       void context.resume();
+    }
+
+    const now = context.currentTime;
+    const gain = context.createGain();
+    const oscillator = context.createOscillator();
+    gain.gain.setValueAtTime(0.0001, now);
+    oscillator.frequency.setValueAtTime(880, now);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.012);
+  }
+
+  function playTone(kind: "tap" | "miss" | "clear" | "start", intensity = 0) {
+    const context = getAudioContext();
+    if (!context) {
+      return;
+    }
+
+    if (context.state === "suspended") {
+      void context.resume().then(() => playTone(kind, intensity));
+      return;
     }
 
     const now = context.currentTime;
@@ -479,8 +510,14 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     const compressor = context.createDynamicsCompressor();
     master.connect(compressor);
     compressor.connect(context.destination);
-    master.gain.setValueAtTime(0.32, now);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "clear" ? 0.62 : 0.24));
+    master.gain.setValueAtTime(kind === "start" ? 0.14 : 0.32, now);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + (kind === "clear" ? 0.62 : kind === "start" ? 0.18 : 0.24));
+
+    if (kind === "start") {
+      playOscillator(context, master, 440, "sine", now, 0.08, 0.08, 660);
+      playOscillator(context, master, 880, "triangle", now + 0.05, 0.1, 0.045, 1320);
+      return;
+    }
 
     if (kind === "clear") {
       const lift = Math.min(intensity, 10) * 8;
@@ -615,6 +652,8 @@ export function TypingPractice({ data, onQueryChange, onPickCandidate }: TypingP
     setPhase("countdown");
     onQueryChange([]);
     activateCharacters(nextState.nextCharacters);
+    unlockAudio();
+    playTone("start");
   }
 
   function resetGame() {
